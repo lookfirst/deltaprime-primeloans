@@ -8,6 +8,7 @@ export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
+      chainId: 2140,
       gas: 12000000,
       blockGasLimit: 0x1fffffffffffff,
       allowUnlimitedContractSize: true,
@@ -15,10 +16,10 @@ export default {
       accounts: {
         accountsBalance: "1000000000000000000000000" // 1000.000 ETH
       },
-      // mining: {
-      //   auto: false,
-      //   interval: 500
-      // }
+      mining: {
+        auto: false,
+        interval: 1000
+       }
     },
     'hardhat-integration': {
       timeout: 1800000,
