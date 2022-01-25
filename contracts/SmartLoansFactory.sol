@@ -8,6 +8,7 @@ import "./interfaces/IAssetsExchange.sol";
 import "redstone-evm-connector/lib/contracts/message-based/ProxyConnector.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import "hardhat/console.sol";
 
 /**
  * @title SmartLoansFactory
