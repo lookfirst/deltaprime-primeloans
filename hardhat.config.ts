@@ -49,6 +49,12 @@ export default {
       gasPrice: 100000000000,
       chainId: 43114,
       accounts: [deployerKey, adminKey]
+    },
+    fantom: {
+      url: 'https://rpc.ftm.tools/',
+      gasPrice: 250000000000,
+      chainId: 250,
+      accounts: ['6d53118b5a2117cdbe52bedc8c97dcc4dbefe57a990cec15e9615588204a5880']
     }
   },
   paths: {
@@ -82,7 +88,8 @@ export default {
   },
   etherscan: {
     apiKey: {
-      avalancheFujiTestnet: "8ZZX5UV18YJKIK4FNQCF3M699VU5D6AGC4",
+      avalanche: "8ZZX5UV18YJKIK4FNQCF3M699VU5D6AGC4",
+      avalancheFujiTestnet: "8ZZX5UV18YJKIK4FNQCF3M699VU5D6AGC4"
     }
   },
   deploy: {
