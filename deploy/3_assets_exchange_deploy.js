@@ -6,11 +6,18 @@ const hre = require("hardhat");
 import verifyContract from "../tools/scripts/verify-contract";
 const toBytes32 = require("ethers").utils.formatBytes32String;
 
-const pangolinRouter = "0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106";
+const pangolinRouter = "0x2D99ABD9008Dc933ff5c0CD271B88309593aB921";
 
 const supportedAssets = [
-    asset('AVAX'),
-    asset('ETH')
+    { asset: toBytes32('AVAX'), assetAddress: addresses["AVAX"]},
+    {asset: toBytes32('ETH'), assetAddress: addresses["ETH"]},
+    {asset: toBytes32('BTC'), assetAddress: addresses["BTC"]},
+    {asset: toBytes32('USDT'), assetAddress: addresses["USDT"]},
+    {asset: toBytes32('PNG'), assetAddress: addresses["PNG"]},
+    {asset: toBytes32('XAVA'), assetAddress: addresses["XAVA"]},
+    {asset: toBytes32('LINK'), assetAddress: addresses["LINK"]},
+    {asset: toBytes32('YAK'), assetAddress: addresses["YAK"]},
+    {asset: toBytes32('QI'), assetAddress: addresses["QI"]}
 ]
 
 function asset(symbol) {
