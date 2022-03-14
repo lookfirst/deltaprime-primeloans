@@ -6,7 +6,7 @@ import {solidity} from "ethereum-waffle";
 import PangolinExchangeArtifact from '../../artifacts/contracts/PangolinExchange.sol/PangolinExchange.json';
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {PangolinExchange} from '../../typechain';
-import {Asset, fromBytes32, getFixedGasSigners, toBytes32, toWei, syncTime} from "../_helpers";
+import {Asset, fromBytes32, getFixedGasSigners, toBytes32, toWei, syncTime, fromWei} from "../_helpers";
 
 chai.use(solidity);
 
@@ -14,6 +14,7 @@ const {deployContract, provider} = waffle;
 const {expect} = chai;
 
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
+const pangolinFactoryAddress = '0xefa94DE7a4656D787667C749f7E1223D71E9FD88';
 const daiTokenAddress = '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70';
 const WAVAXTokenAddress = '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7';
 
@@ -29,302 +30,423 @@ const pangolinRouterAbi = [
   'function getAmountsOut (uint256 amountIn, address[] path) view returns (uint256[])'
 ]
 
+const pangolinFactoryAbi = [
+  "function getPair (address tokenA, address tokenB) view returns (address pair)"
+]
+
+const pangolinPairAbi = [
+  "function token0() external view returns (address)",
+  "function token1() external view returns (address)",
+  "function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
+  "function balanceOf (address owner) view returns (uint)",
+  "function decimals() view returns (uint8)",
+  "function totalSupply() view returns (uint256)",
+  'function transfer(address _to, uint256 _value) public returns (bool success)'
+]
+
 
 describe('PangolinExchange', () => {
-  before("Synchronize blockchain time", async () => {
-    await syncTime();
-  });
+  // before("Synchronize blockchain time", async () => {
+  //   await syncTime();
+  // });
+  //
+  // describe('Test buying and selling an asset', () => {
+  //   let sut: PangolinExchange,
+  //     daiToken: Contract,
+  //     pangolinRouter: Contract,
+  //     owner: SignerWithAddress;
+  //
+  //   before('Deploy the PangolinExchange contract', async () => {
+  //     [,owner] = await getFixedGasSigners(10000000);
+  //
+  //     sut = await deployContract(owner, PangolinExchangeArtifact) as PangolinExchange;
+  //     await sut.initialize(pangolinRouterAddress,
+  //         pangolinFactoryAddress,
+  //         [
+  //       new Asset(toBytes32("AVAX"), WAVAXTokenAddress),
+  //       new Asset(toBytes32("DAI"), daiTokenAddress),
+  //     ]);
+  //
+  //     daiToken = await new ethers.Contract(daiTokenAddress, ERC20Abi);
+  //     pangolinRouter = await new ethers.Contract(pangolinRouterAddress, pangolinRouterAbi);
+  //   });
+  //
+  //
+  //   it('should check for the amount of tokens to buy to be greater than 0', async () => {
+  //     await expect(sut.buyAsset(toBytes32('DAI'), 0)).to.be.revertedWith('Amount of tokens to buy has to be greater than 0');
+  //   });
+  //
+  //
+  //   it('should check if enough funds were provided', async () => {
+  //     const daiTokenPurchaseAmount = 1e20;
+  //     const estimatedAvax = (await pangolinRouter.connect(owner).getAmountsIn(daiTokenPurchaseAmount.toString(), [WAVAXTokenAddress, daiTokenAddress]))[0];
+  //
+  //     await expect(sut.buyAsset(toBytes32('DAI'), daiTokenPurchaseAmount.toString(), {value: Math.floor(estimatedAvax*0.9).toString()})).to.be.revertedWith('Not enough funds were provided');
+  //   });
+  //
+  //
+  //   it('should check if an erc20 tokens were purchased successfully', async () => {
+  //     const daiTokenPurchaseAmount = 1e20;
+  //     const estimatedAvax = (await pangolinRouter.connect(owner).getAmountsIn(daiTokenPurchaseAmount.toString(), [WAVAXTokenAddress, daiTokenAddress]))[0];
+  //     const initialAvaxBalance = await provider.getBalance(owner.address);
+  //
+  //     await sut.buyAsset(toBytes32('DAI'), daiTokenPurchaseAmount.toString(), {value: estimatedAvax.toString()});
+  //
+  //
+  //     const currentDaiTokenBalance = await daiToken.connect(owner).balanceOf(owner.address);
+  //     const currentAvaxBalance = await provider.getBalance(owner.address);
+  //     const expectedAvaxBalance = BigNumber.from(initialAvaxBalance.toString()).sub(BigNumber.from(estimatedAvax.toString()));
+  //
+  //     expect(currentDaiTokenBalance).to.equal(daiTokenPurchaseAmount.toString());
+  //     expect(currentAvaxBalance).to.be.lte(expectedAvaxBalance);
+  //   });
+  //
+  //
+  //   it('should check for the amount of tokens to sell to be greater than 0', async () => {
+  //     await expect(sut.sellAsset(toBytes32('DAI'), toWei("0"), toWei("0.01"))).to.be.revertedWith('Amount of tokens to sell has to be greater than 0');
+  //   });
+  //
+  //
+  //   it('should keep the same dai balance in case of an insufficient token balance transferred to an exchange', async () => {
+  //     const initialDaiTokenBalance = await daiToken.connect(owner).balanceOf(sut.address);
+  //     const initialAvaxBalance = await provider.getBalance(owner.address);
+  //
+  //     expect(await provider.getBalance(sut.address)).to.be.equal(0);
+  //     const estimatedAvaxReceived = (await pangolinRouter.connect(owner).getAmountsOut(toWei("100").toString(), [daiTokenAddress, WAVAXTokenAddress]))[1];
+  //
+  //     await sut.sellAsset(toBytes32('DAI'), toWei("100"), estimatedAvaxReceived);
+  //
+  //     let newDaiBalance = await daiToken.connect(owner).balanceOf(sut.address);
+  //
+  //     expect(await provider.getBalance(sut.address)).to.be.equal(0);
+  //     expect(newDaiBalance).to.be.equal(initialDaiTokenBalance);
+  //     expect(await provider.getBalance(owner.address)).to.be.gt(BigNumber.from(initialAvaxBalance.toString()).sub(BigNumber.from(estimatedAvaxReceived.toString())))
+  //   });
+  //
+  //
+  //   it('should check if an erc20 tokens were sold successfully', async () => {
+  //     const initialDAITokenBalance = await daiToken.connect(owner).balanceOf(owner.address);
+  //     const initialAvaxBalance = await provider.getBalance(owner.address);
+  //     const daiTokenAmount = 1e20;
+  //
+  //     await daiToken.connect(owner).transfer(sut.address, daiTokenAmount.toString());
+  //     await sut.sellAsset(toBytes32('DAI'), daiTokenAmount.toString(), 1);
+  //
+  //     const currentDAITokenBalance = await daiToken.connect(owner).balanceOf(owner.address);
+  //     const currentAvaxBalance = await provider.getBalance(owner.address);
+  //     const daiTokenExpectedBalance = BigNumber.from(initialDAITokenBalance.toString()).sub(BigNumber.from(daiTokenAmount.toString()));
+  //
+  //     expect(currentDAITokenBalance).to.be.equal(daiTokenExpectedBalance);
+  //     expect(currentAvaxBalance).to.be.gt(initialAvaxBalance);
+  //   });
+  // });
+  //
+  // describe('Set and read assets', () => {
+  //   let sut: PangolinExchange;
+  //
+  //   const token1Address = '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70';
+  //   const token2Address = '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7';
+  //   const token3Address = '0x5947bb275c521040051d82396192181b413227a3';
+  //
+  //   before("deploy a contract with a predefined supported assets", async () => {
+  //     let contract: PangolinExchange,
+  //       owner: SignerWithAddress;
+  //
+  //     [owner] = await getFixedGasSigners(10000000);
+  //     let token1 = "TOKEN_1";
+  //     sut = await deployContract(owner, PangolinExchangeArtifact) as PangolinExchange;
+  //     await sut.initialize(pangolinRouterAddress,
+  //         pangolinFactoryAddress,
+  //       [
+  //         new Asset(toBytes32("AVAX"), WAVAXTokenAddress),
+  //         new Asset(toBytes32(token1), token1Address)
+  //       ]);
+  //   });
+  //
+  //   it("should add asset at a contract deploy", async () => {
+  //     await expect((fromBytes32((await sut.getAllAssets())[0])))
+  //       .to.be.equal("AVAX");
+  //     await expect((fromBytes32((await sut.getAllAssets())[1])))
+  //         .to.be.equal("TOKEN_1");
+  //   });
+  //
+  //   it("should add new assets without changing the sequence of previous ones", async () => {
+  //     let token2 = "TOKEN_2";
+  //
+  //     await sut.updateAssets([new Asset(toBytes32(token2), token2Address)]);
+  //
+  //     await expect((fromBytes32((await sut.getAllAssets())[0])))
+  //       .to.be.equal("AVAX");
+  //
+  //     await expect((fromBytes32((await sut.getAllAssets())[1])))
+  //       .to.be.equal("TOKEN_1");
+  //
+  //     await expect((fromBytes32((await sut.getAllAssets())[2])))
+  //       .to.be.equal(token2);
+  //
+  //     await expect((await sut.getAssetAddress(toBytes32("AVAX"))))
+  //       .to.be.equal(WAVAXTokenAddress);
+  //
+  //     await expect((await sut.getAssetAddress(toBytes32("TOKEN_1"))))
+  //       .to.be.equal(token1Address);
+  //
+  //     await expect((await sut.getAssetAddress(toBytes32(token2))))
+  //       .to.be.equal(token2Address);
+  //   });
+  //
+  //
+  //   it("should correctly remove an asset", async () => {
+  //     await sut.updateAssets([
+  //       new Asset(toBytes32("TOKEN_1"), token1Address),
+  //       new Asset(toBytes32("TOKEN_2"), token2Address),
+  //       new Asset(toBytes32("TOKEN_3"), token3Address)
+  //     ]);
+  //
+  //     await sut.removeAssets([toBytes32("TOKEN_2")]);
+  //
+  //     await expect((await sut.getAllAssets()).includes("TOKEN_2"))
+  //       .to.be.false
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_3")
+  //     await expect(sut.getAssetAddress(toBytes32("TOKEN_2")))
+  //       .to.be.revertedWith("Asset not supported.");
+  //   });
+  //
+  //
+  //   it("should not add a new asset if already supported", async () => {
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_3");
+  //
+  //     await sut.updateAssets([new Asset(toBytes32("TOKEN_1"), token1Address)]);
+  //
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_3")
+  //   });
+  //
+  //
+  //   it("should update asset address", async () => {
+  //     const newToken1Address = "0xb794F5eA0ba39494cE839613fffBA74279579268";
+  //     await sut.updateAssets([new Asset(toBytes32("TOKEN_1"), newToken1Address)]);
+  //
+  //     await expect((await sut.getAssetAddress(toBytes32("TOKEN_1"))).toString()).to.be.equal(newToken1Address);
+  //   });
+  //
+  //
+  //   it("should update one token and a add new one", async () => {
+  //     const newToken2Address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
+  //     const token4Address = "0xB155f7e2769a24f1D3E76ACdCed934950f5da410";
+  //     await sut.updateAssets([
+  //       new Asset(toBytes32("TOKEN_2"), newToken2Address),
+  //       new Asset(toBytes32("TOKEN_4"), token4Address)
+  //     ]);
+  //
+  //     await expect((await sut.getAssetAddress(toBytes32("TOKEN_2"))).toString()).to.be.equal(newToken2Address);
+  //     await expect((await sut.getAssetAddress(toBytes32("TOKEN_4"))).toString()).to.be.equal(token4Address);
+  //   });
+  //
+  //
+  //   it("should correctly remove multiple assets", async () => {
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_3,TOKEN_2,TOKEN_4")
+  //
+  //     await sut.removeAssets([toBytes32("TOKEN_2"), toBytes32("TOKEN_3")]);
+  //
+  //     await expect((await sut.getAllAssets()).includes("TOKEN_2"))
+  //       .to.be.false;
+  //     await expect((await sut.getAllAssets()).includes("TOKEN_3"))
+  //       .to.be.false;
+  //
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
+  //
+  //     await expect(sut.getAssetAddress(toBytes32("TOKEN_2")))
+  //       .to.be.revertedWith("Asset not supported.");
+  //     await expect(sut.getAssetAddress(toBytes32("TOKEN_3")))
+  //       .to.be.revertedWith("Asset not supported.");
+  //   });
+  //
+  //
+  //   it("should not add any assets if one of them is corrupted", async () => {
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
+  //
+  //     await expect(sut.updateAssets([
+  //       new Asset(toBytes32(""), token1Address),
+  //       new Asset(toBytes32("TOKEN_5"), token1Address)
+  //     ]))
+  //       .to.be.revertedWith("Cannot set an empty string asset.");
+  //
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
+  //   });
+  //
+  //
+  //   it("should correctly remove assets even if some don't exist", async () => {
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
+  //
+  //     await sut.removeAssets([toBytes32("TOKEN_4"), toBytes32("TOKEN_THAT_NOT_EXISTS")]);
+  //
+  //     await expect(((await sut.getAllAssets()).map(
+  //       el => fromBytes32(el)
+  //     )).join(","))
+  //       .to.be.equal("AVAX,TOKEN_1")
+  //   });
+  //
+  //
+  //   it("should not set an empty string asset", async () => {
+  //     await expect(sut.updateAssets([new Asset(toBytes32(""), token1Address)]))
+  //       .to.be.revertedWith("Cannot set an empty string asset.");
+  //   });
+  //
+  //
+  //   it("should revert for a wrong format address", async () => {
+  //     await expect(sut.updateAssets([new Asset(toBytes32("TOKEN_4"), "bad_address")]))
+  //       .to.be.reverted;
+  //   });
+  //
+  //
+  //   it("should revert for a zero address", async () => {
+  //     await expect(sut.updateAssets([new Asset(toBytes32("TOKEN_4"), "0x")]))
+  //       .to.be.reverted;
+  //   });
+  //
+  //
+  //   it("should revert for a not supported asset", async () => {
+  //     await expect(sut.getAssetAddress(toBytes32("TOKEN_NOT_DEFINED")))
+  //       .to.be.revertedWith("Asset not supported.");
+  //   });
+  //
+  //
+  //   it("should deploy a contract with an empty asset array", async () => {
+  //     let owner2: SignerWithAddress,
+  //       sut2: PangolinExchange;
+  //
+  //     [,owner2] = await getFixedGasSigners(10000000);
+  //
+  //     sut2 = await deployContract(owner2, PangolinExchangeArtifact) as PangolinExchange;
+  //     await sut2.initialize(pangolinRouterAddress, pangolinFactoryAddress, []);
+  //     expect(await sut2.getAllAssets()).to.be.empty;
+  //   });
+  // });
 
-  describe('Test buying and selling an asset', () => {
+  describe('Test adding and removing liquidity', () => {
     let sut: PangolinExchange,
-      daiToken: Contract,
-      pangolinRouter: Contract,
-      owner: SignerWithAddress;
+        daiToken: Contract,
+        pangolinRouter: Contract,
+        pangolinFactory: Contract,
+        pangolinPair: Contract,
+        owner: SignerWithAddress;
 
     before('Deploy the PangolinExchange contract', async () => {
       [,owner] = await getFixedGasSigners(10000000);
 
       sut = await deployContract(owner, PangolinExchangeArtifact) as PangolinExchange;
-      await sut.initialize(pangolinRouterAddress,  [
+      await sut.initialize(
+        pangolinRouterAddress,
+          pangolinFactoryAddress,
+        [
         new Asset(toBytes32("AVAX"), WAVAXTokenAddress),
         new Asset(toBytes32("DAI"), daiTokenAddress),
       ]);
 
       daiToken = await new ethers.Contract(daiTokenAddress, ERC20Abi);
       pangolinRouter = await new ethers.Contract(pangolinRouterAddress, pangolinRouterAbi);
+      pangolinFactory = (await new ethers.Contract(pangolinFactoryAddress, pangolinFactoryAbi)).connect(owner);
+    });
+
+    it('should purchase DAI', async () => {
+        const daiTokenPurchaseAmount = toWei("200");
+        const estimatedAvax = (await pangolinRouter.connect(owner).getAmountsIn(daiTokenPurchaseAmount.toString(), [WAVAXTokenAddress, daiTokenAddress]))[0];
+        await sut.buyAsset(toBytes32('DAI'), daiTokenPurchaseAmount.toString(), {value: estimatedAvax.toString()});
+        expect(await daiToken.connect(owner).balanceOf(owner.address)).to.be.equal(toWei("200"));
     });
 
 
-    it('should check for the amount of tokens to buy to be greater than 0', async () => {
-      await expect(sut.buyAsset(toBytes32('DAI'), 0)).to.be.revertedWith('Amount of tokens to buy has to be greater than 0');
+    it('should check if liquidity was provided successfully', async () => {
+      const pairAddress = await pangolinFactory.getPair(WAVAXTokenAddress, daiTokenAddress);
+      pangolinPair = (await new ethers.Contract(pairAddress, pangolinPairAbi)).connect(owner);
+
+      const [reservesWAVAX, reservesDAI] = await pangolinPair.getReserves();
+      const DaiWAVAXRatio = reservesDAI / reservesWAVAX;
+      const slippageTolerance = 0.01;
+      const daiTokenDesiredAmount = 200;
+      const WAVAXDesiredAmount = daiTokenDesiredAmount / DaiWAVAXRatio;
+      const daiTokenMin = daiTokenDesiredAmount * (1 - slippageTolerance);
+      const WAVAXMin = WAVAXDesiredAmount * (1 - slippageTolerance);
+      const deadline = new Date(new Date().getTime() + 60 * 1000).getTime();
+      const totalLPSupply = await pangolinPair.totalSupply()
+
+      expect(await pangolinPair.balanceOf(owner.address)).to.be.equal("0");
+
+      await daiToken.connect(owner).transfer(sut.address, toWei(daiTokenDesiredAmount.toString()));
+      await sut.addLiquidityAVAX(
+          toBytes32("DAI"),
+          toWei(daiTokenDesiredAmount.toString()),
+          toWei(daiTokenMin.toString()),
+          toWei(WAVAXMin.toString()),
+          deadline,
+          {value: toWei(WAVAXDesiredAmount.toString())}
+      );
+
+      console.log(`LP balance: ${await pangolinPair.balanceOf(owner.address)}`)
+
+
+      const expectedMinLPTokens = daiTokenMin * totalLPSupply / reservesDAI;
+      expect(await pangolinPair.balanceOf(owner.address)).to.be.gte(toWei(expectedMinLPTokens.toString()));
+    });
+
+    it('should check if liquidity was redeemed successfully', async () => {
+      const pairAddress = await pangolinFactory.getPair(WAVAXTokenAddress, daiTokenAddress);
+      pangolinPair = (await new ethers.Contract(pairAddress, pangolinPairAbi)).connect(owner);
+
+      const LPBalance = await pangolinPair.balanceOf(owner.address);
+      const totalLPSupply = await pangolinPair.totalSupply()
+      const LPRatio = LPBalance / totalLPSupply;
+      const [reservesWAVAX, reservesDAI] = await pangolinPair.getReserves();
+      const daiTokenDesiredAmount = LPRatio * reservesDAI
+      const WAVAXDesiredAmount = LPRatio * reservesWAVAX
+      const slippageTolerance = 0.01;
+      const daiTokenMin = daiTokenDesiredAmount * (1 - slippageTolerance);
+      const WAVAXMin = WAVAXDesiredAmount * (1 - slippageTolerance);
+      const deadline = new Date(new Date().getTime() + 60 * 1000).getTime();
+
+      await pangolinPair.transfer(sut.address, LPBalance);
+
+      const avaxBalance = await provider.getBalance(owner.address);
+      expect(await daiToken.connect(owner).balanceOf(owner.address)).to.be.eq(0);
+
+      await sut.removeLiquidityAVAX(
+          toBytes32("DAI"),
+          LPBalance.toString(),
+          daiTokenMin.toString(),
+          WAVAXMin.toString(),
+          deadline.toString(),
+      );
+
+      expect(await pangolinPair.balanceOf(owner.address)).to.be.equal(0);
+      expect(await daiToken.connect(owner).balanceOf(owner.address)).to.be.gte(daiTokenMin.toString());
+
+      const avaxAdded = (fromWei(await provider.getBalance(owner.address)) - fromWei(avaxBalance));
+      expect(avaxAdded).to.be.gte(fromWei(BigNumber.from(WAVAXMin.toString())));
     });
 
 
-    it('should check if enough funds were provided', async () => {
-      const daiTokenPurchaseAmount = 1e20;
-      const estimatedAvax = (await pangolinRouter.connect(owner).getAmountsIn(daiTokenPurchaseAmount.toString(), [WAVAXTokenAddress, daiTokenAddress]))[0];
-
-      await expect(sut.buyAsset(toBytes32('DAI'), daiTokenPurchaseAmount.toString(), {value: Math.floor(estimatedAvax*0.9).toString()})).to.be.revertedWith('Not enough funds were provided');
-    });
-
-
-    it('should check if an erc20 tokens were purchased successfully', async () => {
-      const daiTokenPurchaseAmount = 1e20;
-      const estimatedAvax = (await pangolinRouter.connect(owner).getAmountsIn(daiTokenPurchaseAmount.toString(), [WAVAXTokenAddress, daiTokenAddress]))[0];
-      const initialAvaxBalance = await provider.getBalance(owner.address);
-
-      await sut.buyAsset(toBytes32('DAI'), daiTokenPurchaseAmount.toString(), {value: estimatedAvax.toString()});
-
-
-      const currentDaiTokenBalance = await daiToken.connect(owner).balanceOf(owner.address);
-      const currentAvaxBalance = await provider.getBalance(owner.address);
-      const expectedAvaxBalance = BigNumber.from(initialAvaxBalance.toString()).sub(BigNumber.from(estimatedAvax.toString()));
-
-      expect(currentDaiTokenBalance).to.equal(daiTokenPurchaseAmount.toString());
-      expect(currentAvaxBalance).to.be.lte(expectedAvaxBalance);
-    });
-
-
-    it('should check for the amount of tokens to sell to be greater than 0', async () => {
-      await expect(sut.sellAsset(toBytes32('DAI'), toWei("0"), toWei("0.01"))).to.be.revertedWith('Amount of tokens to sell has to be greater than 0');
-    });
-
-
-    it('should keep the same dai balance in case of an insufficient token balance transferred to an exchange', async () => {
-      const initialDaiTokenBalance = await daiToken.connect(owner).balanceOf(sut.address);
-      const initialAvaxBalance = await provider.getBalance(owner.address);
-
-      expect(await provider.getBalance(sut.address)).to.be.equal(0);
-      const estimatedAvaxReceived = (await pangolinRouter.connect(owner).getAmountsOut(toWei("100").toString(), [daiTokenAddress, WAVAXTokenAddress]))[1];
-
-      await sut.sellAsset(toBytes32('DAI'), toWei("100"), estimatedAvaxReceived);
-
-      let newDaiBalance = await daiToken.connect(owner).balanceOf(sut.address);
-
-      expect(await provider.getBalance(sut.address)).to.be.equal(0);
-      expect(newDaiBalance).to.be.equal(initialDaiTokenBalance);
-      expect(await provider.getBalance(owner.address)).to.be.gt(BigNumber.from(initialAvaxBalance.toString()).sub(BigNumber.from(estimatedAvaxReceived.toString())))
-    });
-
-
-    it('should check if an erc20 tokens were sold successfully', async () => {
-      const initialDAITokenBalance = await daiToken.connect(owner).balanceOf(owner.address);
-      const initialAvaxBalance = await provider.getBalance(owner.address);
-      const daiTokenAmount = 1e20;
-
-      await daiToken.connect(owner).transfer(sut.address, daiTokenAmount.toString());
-      await sut.sellAsset(toBytes32('DAI'), daiTokenAmount.toString(), 1);
-
-      const currentDAITokenBalance = await daiToken.connect(owner).balanceOf(owner.address);
-      const currentAvaxBalance = await provider.getBalance(owner.address);
-      const daiTokenExpectedBalance = BigNumber.from(initialDAITokenBalance.toString()).sub(BigNumber.from(daiTokenAmount.toString()));
-
-      expect(currentDAITokenBalance).to.be.equal(daiTokenExpectedBalance);
-      expect(currentAvaxBalance).to.be.gt(initialAvaxBalance);
-    });
-  });
-
-  describe('Set and read assets', () => {
-    let sut: PangolinExchange;
-
-    const token1Address = '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70';
-    const token2Address = '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7';
-    const token3Address = '0x5947bb275c521040051d82396192181b413227a3';
-
-    before("deploy a contract with a predefined supported assets", async () => {
-      let contract: PangolinExchange,
-        owner: SignerWithAddress;
-
-      [owner] = await getFixedGasSigners(10000000);
-      let token1 = "TOKEN_1";
-      sut = await deployContract(owner, PangolinExchangeArtifact) as PangolinExchange;
-      await sut.initialize(pangolinRouterAddress,
-        [
-          new Asset(toBytes32("AVAX"), WAVAXTokenAddress),
-          new Asset(toBytes32(token1), token1Address)
-        ]);
-    });
-
-    it("should add asset at a contract deploy", async () => {
-      await expect((fromBytes32((await sut.getAllAssets())[0])))
-        .to.be.equal("AVAX");
-      await expect((fromBytes32((await sut.getAllAssets())[1])))
-          .to.be.equal("TOKEN_1");
-    });
-
-    it("should add new assets without changing the sequence of previous ones", async () => {
-      let token2 = "TOKEN_2";
-
-      await sut.updateAssets([new Asset(toBytes32(token2), token2Address)]);
-
-      await expect((fromBytes32((await sut.getAllAssets())[0])))
-        .to.be.equal("AVAX");
-
-      await expect((fromBytes32((await sut.getAllAssets())[1])))
-        .to.be.equal("TOKEN_1");
-
-      await expect((fromBytes32((await sut.getAllAssets())[2])))
-        .to.be.equal(token2);
-
-      await expect((await sut.getAssetAddress(toBytes32("AVAX"))))
-        .to.be.equal(WAVAXTokenAddress);
-
-      await expect((await sut.getAssetAddress(toBytes32("TOKEN_1"))))
-        .to.be.equal(token1Address);
-
-      await expect((await sut.getAssetAddress(toBytes32(token2))))
-        .to.be.equal(token2Address);
-    });
-
-
-    it("should correctly remove an asset", async () => {
-      await sut.updateAssets([
-        new Asset(toBytes32("TOKEN_1"), token1Address),
-        new Asset(toBytes32("TOKEN_2"), token2Address),
-        new Asset(toBytes32("TOKEN_3"), token3Address)
-      ]);
-
-      await sut.removeAssets([toBytes32("TOKEN_2")]);
-
-      await expect((await sut.getAllAssets()).includes("TOKEN_2"))
-        .to.be.false
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_3")
-      await expect(sut.getAssetAddress(toBytes32("TOKEN_2")))
-        .to.be.revertedWith("Asset not supported.");
-    });
-
-
-    it("should not add a new asset if already supported", async () => {
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_3");
-
-      await sut.updateAssets([new Asset(toBytes32("TOKEN_1"), token1Address)]);
-
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_3")
-    });
-
-
-    it("should update asset address", async () => {
-      const newToken1Address = "0xb794F5eA0ba39494cE839613fffBA74279579268";
-      await sut.updateAssets([new Asset(toBytes32("TOKEN_1"), newToken1Address)]);
-
-      await expect((await sut.getAssetAddress(toBytes32("TOKEN_1"))).toString()).to.be.equal(newToken1Address);
-    });
-
-
-    it("should update one token and a add new one", async () => {
-      const newToken2Address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
-      const token4Address = "0xB155f7e2769a24f1D3E76ACdCed934950f5da410";
-      await sut.updateAssets([
-        new Asset(toBytes32("TOKEN_2"), newToken2Address),
-        new Asset(toBytes32("TOKEN_4"), token4Address)
-      ]);
-
-      await expect((await sut.getAssetAddress(toBytes32("TOKEN_2"))).toString()).to.be.equal(newToken2Address);
-      await expect((await sut.getAssetAddress(toBytes32("TOKEN_4"))).toString()).to.be.equal(token4Address);
-    });
-
-
-    it("should correctly remove multiple assets", async () => {
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_3,TOKEN_2,TOKEN_4")
-
-      await sut.removeAssets([toBytes32("TOKEN_2"), toBytes32("TOKEN_3")]);
-
-      await expect((await sut.getAllAssets()).includes("TOKEN_2"))
-        .to.be.false;
-      await expect((await sut.getAllAssets()).includes("TOKEN_3"))
-        .to.be.false;
-
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
-
-      await expect(sut.getAssetAddress(toBytes32("TOKEN_2")))
-        .to.be.revertedWith("Asset not supported.");
-      await expect(sut.getAssetAddress(toBytes32("TOKEN_3")))
-        .to.be.revertedWith("Asset not supported.");
-    });
-
-
-    it("should not add any assets if one of them is corrupted", async () => {
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
-
-      await expect(sut.updateAssets([
-        new Asset(toBytes32(""), token1Address),
-        new Asset(toBytes32("TOKEN_5"), token1Address)
-      ]))
-        .to.be.revertedWith("Cannot set an empty string asset.");
-
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
-    });
-
-
-    it("should correctly remove assets even if some don't exist", async () => {
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1,TOKEN_4")
-
-      await sut.removeAssets([toBytes32("TOKEN_4"), toBytes32("TOKEN_THAT_NOT_EXISTS")]);
-
-      await expect(((await sut.getAllAssets()).map(
-        el => fromBytes32(el)
-      )).join(","))
-        .to.be.equal("AVAX,TOKEN_1")
-    });
-
-
-    it("should not set an empty string asset", async () => {
-      await expect(sut.updateAssets([new Asset(toBytes32(""), token1Address)]))
-        .to.be.revertedWith("Cannot set an empty string asset.");
-    });
-
-
-    it("should revert for a wrong format address", async () => {
-      await expect(sut.updateAssets([new Asset(toBytes32("TOKEN_4"), "bad_address")]))
-        .to.be.reverted;
-    });
-
-
-    it("should revert for a zero address", async () => {
-      await expect(sut.updateAssets([new Asset(toBytes32("TOKEN_4"), "0x")]))
-        .to.be.reverted;
-    });
-
-
-    it("should revert for a not supported asset", async () => {
-      await expect(sut.getAssetAddress(toBytes32("TOKEN_NOT_DEFINED")))
-        .to.be.revertedWith("Asset not supported.");
-    });
-
-
-    it("should deploy a contract with an empty asset array", async () => {
-      let owner2: SignerWithAddress,
-        sut2: PangolinExchange;
-
-      [,owner2] = await getFixedGasSigners(10000000);
-
-      sut2 = await deployContract(owner2, PangolinExchangeArtifact) as PangolinExchange;
-      await sut2.initialize(pangolinRouterAddress, []);
-      expect(await sut2.getAllAssets()).to.be.empty;
-    });
   });
 });

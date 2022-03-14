@@ -3,6 +3,7 @@
 pragma solidity ^0.8.4;
 
 import "@pangolindex/exchange-contracts/contracts/pangolin-periphery/interfaces/IPangolinRouter.sol";
+import "@pangolindex/exchange-contracts/contracts/pangolin-core/interfaces/IPangolinFactory.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -21,6 +22,8 @@ contract PangolinExchange is OwnableUpgradeable, IAssetsExchange, ReentrancyGuar
 
   /* ========= STATE VARIABLES ========= */
   IPangolinRouter pangolinRouter;
+  IPangolinFactory pangolinFactory;
+
 
   using EnumerableMap for EnumerableMap.Bytes32ToAddressMap;
   EnumerableMap.Bytes32ToAddressMap private supportedAssetsMap;
@@ -28,8 +31,9 @@ contract PangolinExchange is OwnableUpgradeable, IAssetsExchange, ReentrancyGuar
   address private constant WAVAX_ADDRESS = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
   // first supportedAsset must be a blockchain native currency
-  function initialize(address _pangolinRouter, Asset[] memory supportedAssets) external initializer {
+  function initialize(address _pangolinRouter, address _pangolinFactory, Asset[] memory supportedAssets) external initializer {
     pangolinRouter = IPangolinRouter(_pangolinRouter);
+    pangolinFactory = IPangolinFactory(_pangolinFactory);
 
     _updateAssets(supportedAssets);
     __Ownable_init();
@@ -62,9 +66,9 @@ contract PangolinExchange is OwnableUpgradeable, IAssetsExchange, ReentrancyGuar
    * Sells selected ERC20 token for AVAX
    * @dev _token ERC20 token's address
    * @dev _exactERC20AmountIn amount of the ERC20 token to be sold
-   * @dev _minAvaxAmountOut minimum amount of the AVAX token to be bought
+   * @dev _minamountAVAXOut minimum amount of the AVAX token to be bought
    **/
-  function sellAsset(bytes32 _token, uint256 _exactERC20AmountIn, uint256 _minAvaxAmountOut) external override nonReentrant returns (bool) {
+  function sellAsset(bytes32 _token, uint256 _exactERC20AmountIn, uint256 _minamountAVAXOut) external override nonReentrant returns (bool) {
     require(_exactERC20AmountIn > 0, "Amount of tokens to sell has to be greater than 0");
 
     address tokenAddress = getAssetAddress(_token);
@@ -73,7 +77,7 @@ contract PangolinExchange is OwnableUpgradeable, IAssetsExchange, ReentrancyGuar
     address(token).safeApprove(address(pangolinRouter), _exactERC20AmountIn);
 
     (bool success, ) = address(pangolinRouter).call{value: 0}(
-      abi.encodeWithSignature("swapExactTokensForAVAX(uint256,uint256,address[],address,uint256)", _exactERC20AmountIn, _minAvaxAmountOut, getPathForTokenToAVAX(tokenAddress), msg.sender, block.timestamp)
+      abi.encodeWithSignature("swapExactTokensForAVAX(uint256,uint256,address[],address,uint256)", _exactERC20AmountIn, _minamountAVAXOut, getPathForTokenToAVAX(tokenAddress), msg.sender, block.timestamp)
     );
 
     if (!success) {
@@ -99,6 +103,109 @@ contract PangolinExchange is OwnableUpgradeable, IAssetsExchange, ReentrancyGuar
 
     emit AssetsAdded(_assets);
   }
+
+  /**
+   * Adds liquidity to _token/WAVAX LP
+   * @dev _token token to be added to _token/WAVAX LP
+   * @dev amountTokenDesired target _token amount to be added to the LP
+   * @dev amountTokenMin minimum amount of _token to be added to the LP
+   * @dev msg.value target AVAX amount to be added to the LP
+   * @dev amountAVAXMin minimum amount of AVAX to be added to the LP
+   * @dev deadline epoch time before which the transaction must be executed
+   **/
+  function addLiquidityAVAX(
+    bytes32 _tokenA,
+    uint amountTokenDesired,
+    uint amountTokenMin,
+    uint amountAVAXMin,
+    uint deadline
+  ) public nonReentrant payable returns(bool success) {
+    require(amountTokenDesired >= amountTokenMin, "amountTokenMin cannot be greater than amountTokenDesired");
+    require(msg.value >= amountAVAXMin, "amountAVAXMin cannot be greater than amount of AVAX sent along with the tx");
+
+    address tokenAAddress = getAssetAddress(_tokenA);
+    IERC20 tokenAContract = IERC20(tokenAAddress);
+    tokenAContract.approve(address(pangolinRouter), amountTokenDesired);
+
+    bytes memory result;
+    (success, result) = address(pangolinRouter).call{value: msg.value}(
+      abi.encodeWithSignature(
+        "addLiquidityAVAX(address,uint256,uint256,uint256,address,uint256)",
+        tokenAAddress,
+        amountTokenDesired,
+        amountTokenMin,
+        amountAVAXMin,
+        msg.sender,
+        deadline
+      )
+    );
+    uint256 amountTokenA;
+    uint256 amountAVAX;
+    uint256 liquidity;
+    assembly {
+      amountTokenA := mload(add(result, 32))
+      amountAVAX := mload(add(result, 64))
+      liquidity := mload(add(result, 96))
+    }
+
+    address pairAddress = pangolinFactory.getPair(tokenAAddress, WAVAX_ADDRESS);
+    emit LiquidityAdded(msg.sender, pairAddress, amountTokenA, amountAVAX, liquidity);
+
+    // Return leftover AVAX
+    payable(msg.sender).safeTransferETH(address(this).balance);
+    if (!success) {
+      tokenAAddress.safeTransfer(msg.sender, tokenAContract.balanceOf(address(this)));
+      return false;
+    }
+    return true;
+  }
+
+
+  function removeLiquidityAVAX(
+    bytes32 _tokenA,
+    uint256 liquidity,
+    uint256 amountTokenMin,
+    uint256 amountAVAXMin,
+    uint256 deadline
+  ) public nonReentrant returns (bool success) {
+    require(liquidity > 0, "Number of LP tokens to remove has to be > 0");
+
+    address tokenAAddress = getAssetAddress(_tokenA);
+    address pairAddress = pangolinFactory.getPair(tokenAAddress, WAVAX_ADDRESS);
+    IERC20 pairTokenContract = IERC20(pairAddress);
+    bytes memory result;
+
+    pairTokenContract.approve(address(pangolinRouter), liquidity);
+
+    (success, result) = address(pangolinRouter).call(
+      abi.encodeWithSignature(
+        "removeLiquidityAVAX(address,uint256,uint256,uint256,address,uint256)",
+        tokenAAddress,
+        liquidity,
+        amountTokenMin,
+        amountAVAXMin,
+        msg.sender,
+        deadline
+      )
+    );
+    uint256 amountTokenA;
+    uint256 amountAVAX;
+    assembly {
+      amountTokenA := mload(add(result, 32))
+      amountAVAX := mload(add(result, 64))
+    }
+
+    emit LiquidityRemoved(msg.sender, pairAddress, amountTokenA, amountAVAX, liquidity);
+
+    if (!success) {
+      pairAddress.safeTransfer(msg.sender, pairTokenContract.balanceOf(address(this)));
+      return false;
+    }
+    payable(msg.sender).safeTransferETH(address(this).balance);
+    tokenAAddress.safeTransfer(msg.sender, IERC20(tokenAAddress).balanceOf(address(this)));
+    return true;
+  }
+
 
   /**
    * Adds or updates supported assets
@@ -224,4 +331,26 @@ contract PangolinExchange is OwnableUpgradeable, IAssetsExchange, ReentrancyGuar
    * @param removedAssets removed assets
    **/
   event AssetsRemoved(bytes32[] removedAssets);
+
+  /**
+   * @dev emitted after adding liquidity to a LP
+   * @param provider Address of the wallet that added liquidity
+   * @param pair Address of the LP pair
+   * @param tokenAAmount Amount of tokenA added to a LP
+   * @param tokenBAmount Amount of tokenB added to a LP
+   * @param LPTokens Amount of LP tokens received
+   **/
+  event LiquidityAdded(address indexed provider, address pair, uint256 tokenAAmount, uint256 tokenBAmount, uint256 LPTokens);
+
+
+  /**
+   * @dev emitted after removing liquidity from a LP
+   * @param provider Address of the wallet that removed liquidity
+   * @param pair Address of the LP pair
+   * @param tokenAAmount Amount of tokenA received from a LP
+   * @param tokenBAmount Amount of tokenB received from a LP
+   * @param LPTokens Amount of LP tokens returned to a LP
+   **/
+  event LiquidityRemoved(address indexed provider, address pair, uint256 tokenAAmount, uint256 tokenBAmount, uint256 LPTokens);
+
 }

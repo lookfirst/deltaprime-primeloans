@@ -170,6 +170,17 @@ contract SmartLoan is SmartLoanProperties, PriceAware, OwnableUpgradeable, Reent
     emit Withdrawn(msg.sender, _amount, block.timestamp);
   }
 
+
+  function addLiquidityAVAX(
+    bytes32 _tokenA,
+    uint amountTokenDesired,
+    uint amountTokenMin,
+    uint amountAVAXMin,
+    uint deadline) public onlyOwner nonReentrant remainsSolvent {
+
+  }
+
+
   /**
    * Invests an amount to buy an asset
    * @param _asset code of the asset

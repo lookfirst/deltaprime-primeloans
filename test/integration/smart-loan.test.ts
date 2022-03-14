@@ -47,6 +47,7 @@ chai.use(solidity);
 
 const {deployContract, provider} = waffle;
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
+const pangolinFactoryAddress = '0xefa94DE7a4656D787667C749f7E1223D71E9FD88';
 const usdTokenAddress = '0xc7198437980c041c805a1edcba50c1ce5db95118';
 const linkTokenAddress = '0x5947bb275c521040051d82396192181b413227a3';
 const WAVAXTokenAddress = '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7';
@@ -87,7 +88,7 @@ describe('Smart loan',  () => {
       pool = (await deployContract(owner, PoolArtifact)) as Pool;
       usdTokenContract = new ethers.Contract(usdTokenAddress, erc20ABI, provider);
 
-      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, [
+      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress, [
           new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
           new Asset(toBytes32('USD'), usdTokenAddress)
       ]);
@@ -285,7 +286,7 @@ describe('Smart loan',  () => {
       pool = (await deployContract(owner, PoolArtifact)) as Pool;
       usdTokenContract = new ethers.Contract(usdTokenAddress, erc20ABI, provider);
 
-      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, [
+      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress, [
           new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
           new Asset(toBytes32('USD'), usdTokenAddress)
       ]);
@@ -408,7 +409,7 @@ describe('Smart loan',  () => {
       usdTokenContract = new ethers.Contract(usdTokenAddress, erc20ABI, provider);
       linkTokenContract = new ethers.Contract(linkTokenAddress, erc20ABI, provider);
 
-      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, [
+      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress,[
           new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
           new Asset(toBytes32('USD'), usdTokenAddress),
           new Asset(toBytes32('LINK'), linkTokenAddress)
@@ -599,7 +600,7 @@ describe('Smart loan',  () => {
       usdTokenContract = new ethers.Contract(usdTokenAddress, erc20ABI, provider);
       linkTokenContract = new ethers.Contract(linkTokenAddress, erc20ABI, provider);
 
-      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress,
+      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress,
 [
         new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
         new Asset(toBytes32('USD'), usdTokenAddress),
@@ -796,7 +797,7 @@ describe('Smart loan',  () => {
       usdTokenContract = new ethers.Contract(usdTokenAddress, erc20ABI, provider);
       linkTokenContract = new ethers.Contract(linkTokenAddress, erc20ABI, provider);
 
-      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress,
+      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress,
           [
             new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
             new Asset(toBytes32('USD'), usdTokenAddress),
@@ -971,7 +972,7 @@ describe('Smart loan',  () => {
       usdTokenContract = new ethers.Contract(usdTokenAddress, erc20ABI, provider);
       linkTokenContract = new ethers.Contract(linkTokenAddress, erc20ABI, provider);
 
-      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress,
+      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress,
         [
           new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
           new Asset(toBytes32('USD'), usdTokenAddress),
@@ -1140,7 +1141,7 @@ describe('Smart loan',  () => {
       pool = (await deployContract(owner, PoolArtifact)) as Pool;
       linkTokenContract = new ethers.Contract(linkTokenAddress, erc20ABI, provider);
 
-      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress,
+      exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress,
           [
             new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
             new Asset(toBytes32('USD'), usdTokenAddress),
@@ -1270,7 +1271,7 @@ describe('Smart loan',  () => {
             usdTokenContract = new ethers.Contract(usdTokenAddress, erc20ABI, provider);
             linkTokenContract = new ethers.Contract(linkTokenAddress, erc20ABI, provider);
 
-            exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress,
+            exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress,
                 [
                   new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
                   new Asset(toBytes32('USD'), usdTokenAddress),

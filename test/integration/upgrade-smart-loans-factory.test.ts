@@ -20,6 +20,7 @@ import {getFixedGasSigners} from "../_helpers";
 chai.use(solidity);
 
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
+const pangolinFactoryAddress = '0xefa94DE7a4656D787667C749f7E1223D71E9FD88';
 const usdTokenAddress = '0xc7198437980c041c805a1edcba50c1ce5db95118';
 
 describe('Smart loans factory - upgrading',  () => {
@@ -39,7 +40,7 @@ describe('Smart loans factory - upgrading',  () => {
         before("should deploy provider, exchange, loansFactory and pool", async () => {
             [owner, admin] = await getFixedGasSigners(10000000);
             pool = (await deployContract(owner, PoolArtifact)) as Pool;
-            exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, [new Asset(toBytes32('USD'), usdTokenAddress)]);
+            exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress, [new Asset(toBytes32('USD'), usdTokenAddress)]);
             smartLoansFactory = await (new SmartLoansFactory__factory(owner).deploy());
 
             proxy = await (new TransparentUpgradeableProxy__factory(owner).deploy(smartLoansFactory.address, admin.address, []));

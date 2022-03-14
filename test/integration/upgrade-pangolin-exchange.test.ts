@@ -15,6 +15,7 @@ import {getFixedGasSigners} from "../_helpers";
 chai.use(solidity);
 
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
+const pangolinFactoryAddress = '0xefa94DE7a4656D787667C749f7E1223D71E9FD88';
 const usdTokenAddress = '0xc7198437980c041c805a1edcba50c1ce5db95118';
 
 describe('Pangolin Exchange - upgrading',  () => {
@@ -30,12 +31,12 @@ describe('Pangolin Exchange - upgrading',  () => {
             proxy: TransparentUpgradeableProxy;
         before("should deploy provider, exchange, loansFactory and pool", async () => {
             [owner, admin] = await getFixedGasSigners(100000000);
-            exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, [new Asset(toBytes32('USD'), usdTokenAddress)]);
+            exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress, [new Asset(toBytes32('USD'), usdTokenAddress)]);
 
             proxy = await (new TransparentUpgradeableProxy__factory(owner).deploy(exchange.address, admin.address, []));
             exchange = await (new PangolinExchange__factory(owner).attach(proxy.address));
 
-            await exchange.connect(owner).initialize(pangolinRouterAddress, [new Asset(toBytes32('USD'), usdTokenAddress)]);
+            await exchange.connect(owner).initialize(pangolinRouterAddress, pangolinFactoryAddress,[new Asset(toBytes32('USD'), usdTokenAddress)]);
 
             supportedAssets = await exchange.getAllAssets();
         });
@@ -48,17 +49,17 @@ describe('Pangolin Exchange - upgrading',  () => {
         });
 
 
-        // it("should upgrade", async () => {
-        //     const exchangeV2 = await (new MockUpgradedPangolinExchange__factory(owner).deploy());
-        //
-        //     await proxy.connect(admin).upgradeTo(exchangeV2.address);
-        //
-        //     let exchangeUpgraded = (await new ethers.Contract(exchange.address, MockPangolinExchangeArtifact.abi)) as MockUpgradedPangolinExchange;
-        //
-        //     // The mock exchange has a hardcoded return value of 1337
-        //     expect(await exchangeUpgraded.connect(owner).newMockedFunction()).to.be.equal(1337);
-        //     // The contract's supported assets should remain unchanged
-        //     expect(await exchange.getAllAssets()).to.be.deep.equal(supportedAssets);
-        // });
+        it("should upgrade", async () => {
+            const exchangeV2 = await (new MockUpgradedPangolinExchange__factory(owner).deploy());
+
+            await proxy.connect(admin).upgradeTo(exchangeV2.address);
+
+            let exchangeUpgraded = (await new ethers.Contract(exchange.address, MockPangolinExchangeArtifact.abi)) as MockUpgradedPangolinExchange;
+
+            // The mock exchange has a hardcoded return value of 1337
+            expect(await exchangeUpgraded.connect(owner).newMockedFunction()).to.be.equal(1337);
+            // The contract's supported assets should remain unchanged
+            expect(await exchange.getAllAssets()).to.be.deep.equal(supportedAssets);
+        });
     });
 });

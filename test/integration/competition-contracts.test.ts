@@ -56,6 +56,7 @@ const SMART_LOAN_MOCK = "MockSmartLoanRedstoneProvider";
 const SMART_LOAN_MOCK_UPGRADED = "MockSmartLoanRedstoneProviderLimitedCollateral";
 const {deployContract, provider} = waffle;
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
+const pangolinFactoryAddress = '0xefa94DE7a4656D787667C749f7E1223D71E9FD88';
 const usdTokenAddress = '0xc7198437980c041c805a1edcba50c1ce5db95118';
 const WAVAXTokenAddress = '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7';
 
@@ -119,7 +120,7 @@ describe('Trading competition upgraded contracts test', () => {
         const borrowingIndex = (await deployContract(owner, CompoundingIndexArtifact, [pool.address])) as CompoundingIndex;
 
         // Assets exchange (without TUP)
-        exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, [
+        exchange = await deployAndInitPangolinExchangeContract(owner, pangolinRouterAddress, pangolinFactoryAddress,[
             new Asset(toBytes32('AVAX'), WAVAXTokenAddress),
             new Asset(toBytes32('USD'), usdTokenAddress)
         ]);
