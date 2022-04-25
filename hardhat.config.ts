@@ -3,6 +3,7 @@ import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
 import "hardhat-watcher";
 import "@nomiclabs/hardhat-etherscan";
+import "hardhat-contract-sizer";
 require('hardhat-deploy');
 
 const fs = require('fs');
@@ -10,7 +11,16 @@ const deployerKey = fs.readFileSync(".secret-deployer").toString().trim();
 const adminKey = fs.readFileSync(".secret-admin").toString().trim();
 
 export default {
-  solidity: "0.8.4",
+  solidity: {
+    compilers: [
+      {
+        version: "0.4.22",
+      },
+      {
+        version: "0.8.4",
+      }
+    ]
+  },
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
@@ -18,6 +28,7 @@ export default {
       gas: 12000000,
       blockGasLimit: 0x1fffffffffffff,
       timeout: 1800000,
+      allowUnlimitedContractSize: true,
       settings: {
         optimizer: {
           enabled: true,
