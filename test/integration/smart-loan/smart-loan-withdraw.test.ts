@@ -16,7 +16,7 @@ import {
   deployAndInitPangolinExchangeContract, formatUnits,
   fromWei,
   getFixedGasSigners,
-  recompileSmartLoan,
+  recompileSmartLoanLib,
   toBytes32,
   toWei,
 } from "../../_helpers";
@@ -24,8 +24,7 @@ import {syncTime} from "../../_syncTime"
 import {WrapperBuilder} from "redstone-evm-connector";
 import {
   CompoundingIndex,
-  ERC20Pool,
-  MockSmartLoanRedstoneProvider,
+  ERC20Pool, MockSmartLoanLogicFacetRedstoneProvider, MockSmartLoanLogicFacetRedstoneProvider__factory,
   OpenBorrowersRegistry__factory,
   PangolinExchange,
   SmartLoan,
@@ -37,6 +36,7 @@ import {parseUnits} from "ethers/lib/utils";
 
 chai.use(solidity);
 
+const {deployDiamond, deployFacet, replaceFacet} = require('./utils/deploy-diamond');
 const {deployContract, provider} = waffle;
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
 const usdTokenAddress = '0xc7198437980c041c805a1edcba50c1ce5db95118';
@@ -63,7 +63,7 @@ describe('Smart loan',  () => {
 
   describe('A loan with closeLoan() and additional AVAX supplied', () => {
     let exchange: PangolinExchange,
-        loan: SmartLoan,
+        loan: MockSmartLoanLogicFacetRedstoneProvider,
         smartLoansFactory: SmartLoansFactory,
         wrappedLoan: any,
         pool: ERC20Pool,
@@ -76,10 +76,10 @@ describe('Smart loan',  () => {
         MOCK_PRICES: any,
         AVAX_PRICE: number,
         USD_PRICE: number,
-        artifact: any,
-        implementation: any;
+        diamondAddress: any;
 
     before("deploy provider, exchange and pool", async () => {
+      diamondAddress = await deployDiamond();
       [owner, depositor] = await getFixedGasSigners(10000000);
 
       const variableUtilisationRatesCalculator = (await deployContract(owner, VariableUtilisationRatesCalculatorArtifact)) as VariableUtilisationRatesCalculator;
@@ -129,17 +129,17 @@ describe('Smart loan',  () => {
 
       smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
 
-      artifact = await recompileSmartLoan(SMART_LOAN_MOCK, [0], { 'AVAX': pool.address }, exchange.address, yakRouterContract.address, 'mock');
-      implementation = await deployContract(owner, artifact) as SmartLoan;
+      await recompileSmartLoanLib("SmartLoanLib", [0], { 'AVAX': pool.address }, exchange.address, yakRouterContract.address, 'lib');
+      await deployFacet("MockSmartLoanLogicFacetRedstoneProvider", diamondAddress);
 
-      await smartLoansFactory.initialize(implementation.address);
+      await smartLoansFactory.initialize(diamondAddress);
     });
 
     it("should deploy a smart loan, fund, borrow and swap", async () => {
       await smartLoansFactory.connect(owner).createLoan();
 
-      const loanAddress = await smartLoansFactory.getLoanForOwner(owner.address);
-      loan = ((await new ethers.Contract(loanAddress, SmartLoanArtifact.abi)) as SmartLoan).connect(owner);
+      const loan_proxy_address = await smartLoansFactory.getLoanForOwner(owner.address);
+      loan = await (new MockSmartLoanLogicFacetRedstoneProvider__factory(owner)).attach(loan_proxy_address);
 
 
       wrappedLoan = WrapperBuilder
@@ -163,8 +163,8 @@ describe('Smart loan',  () => {
       expect(await wrappedLoan.getLTV()).to.be.equal(3000);
 
       const slippageTolerance = 0.03;
-      let usdAmount = 15000;
-      let requiredAvaxAmount = USD_PRICE * usdAmount * (1 + slippageTolerance) / AVAX_PRICE;
+      let usdAmount = 10000;
+      let requiredAvaxAmount = USD_PRICE * usdAmount * (1 + slippageTolerance)  / AVAX_PRICE;
 
       await wrappedLoan.swap(
           toBytes32('AVAX'),
@@ -183,7 +183,7 @@ describe('Smart loan',  () => {
     });
 
     it('should revert on a withdrawal resulting in an insolvent loan', async () => {
-      await expect(wrappedLoan.withdraw(toBytes32("USD"), parseUnits("15000", usdTokenDecimalPlaces))).to.be.revertedWith("The action may cause an account to become insolvent");
+      await expect(wrappedLoan.withdraw(toBytes32("USD"), parseUnits("10000", usdTokenDecimalPlaces))).to.be.revertedWith("The action may cause an account to become insolvent");
     });
 
     it('should withdraw', async () => {

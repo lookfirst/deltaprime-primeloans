@@ -3,9 +3,11 @@
 pragma solidity ^0.8.4;
 
 import "./SmartLoan.sol";
+import "./faucets/SmartLoanLogicFacet.sol";
+import "./faucets/OwnershipFacet.sol";
+import "./proxies/DiamondBeaconProxy.sol";
+import "./upgradeInitializers/DiamondInit.sol";
 import "redstone-evm-connector/lib/contracts/commons/ProxyConnector.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
@@ -21,48 +23,50 @@ contract SmartLoansFactory is OwnableUpgradeable, IBorrowersRegistry {
     _;
   }
 
-  UpgradeableBeacon public upgradeableBeacon;
+  // TODO: Change name to something like SmartLoanRouter
+  SmartLoan public smartLoanRouter;
 
   mapping(address => address) public ownersToLoans;
   mapping(address => address) public loansToOwners;
 
   SmartLoan[] loans;
 
-  function initialize(SmartLoan _smartLoanImplementation) external initializer {
-    upgradeableBeacon = new UpgradeableBeacon(address(_smartLoanImplementation));
-    upgradeableBeacon.transferOwnership(msg.sender);
+  function initialize(address payable _smartLoanRouter) external initializer {
+    smartLoanRouter = SmartLoan(_smartLoanRouter);
     __Ownable_init();
   }
 
   function createLoan() public virtual oneLoanPerOwner returns (SmartLoan) {
-    BeaconProxy beaconProxy = new BeaconProxy(
-      payable(address(upgradeableBeacon)),
-      abi.encodeWithSelector(SmartLoan.initialize.selector, 0)
+    // TODO: Change to a custom beacon proxy
+    DiamondBeaconProxy beaconProxy = new DiamondBeaconProxy(
+      payable(address(smartLoanRouter)),
+      abi.encodeWithSelector(DiamondInit.init.selector)
     );
+
     SmartLoan smartLoan = SmartLoan(payable(address(beaconProxy)));
 
     //Update registry and emit event
     updateRegistry(smartLoan);
-    smartLoan.transferOwnership(msg.sender);
-
+    OwnershipFacet(address(smartLoan)).transferOwnership(msg.sender);
     emit SmartLoanCreated(address(smartLoan), msg.sender, "", 0, 0);
     return smartLoan;
   }
 
   function createAndFundLoan(bytes32 fundedAsset, uint256 _amount, uint256 _initialDebt) public virtual oneLoanPerOwner returns (SmartLoan) {
-    BeaconProxy beaconProxy = new BeaconProxy(payable(address(upgradeableBeacon)),
-      abi.encodeWithSelector(SmartLoan.initialize.selector));
+    // TODO: Change to a custom beacon proxy
+    DiamondBeaconProxy beaconProxy = new DiamondBeaconProxy(payable(address(smartLoanRouter)),
+      abi.encodeWithSelector(DiamondInit.init.selector));
     SmartLoan smartLoan = SmartLoan(payable(address(beaconProxy)));
 
     //Update registry and emit event
     updateRegistry(smartLoan);
 
     //Fund account with own funds and credit
-    smartLoan.fund(fundedAsset, _amount);
+    SmartLoanLogicFacet(payable(address(smartLoan))).fund(fundedAsset, _amount);
 
-    ProxyConnector.proxyCalldata(address(smartLoan), abi.encodeWithSelector(SmartLoan.borrow.selector, _initialDebt));
+    ProxyConnector.proxyCalldata(address(smartLoan), abi.encodeWithSelector(SmartLoanLogicFacet.borrow.selector, _initialDebt));
 
-    smartLoan.transferOwnership(msg.sender);
+    OwnershipFacet(address(smartLoan)).transferOwnership(msg.sender);
 
     emit SmartLoanCreated(address(smartLoan), msg.sender, fundedAsset, _amount, _initialDebt);
 

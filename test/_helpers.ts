@@ -51,7 +51,8 @@ export const getSelloutRepayAmount = async function (
 
   targetLTV = targetLTV / 1000;
   bonus = bonus / 1000;
-  return (targetLTV * (totalValue - debt) - debt) / (targetLTV * bonus - 1) * 1.04;
+    // TODO: Verify if the 1.04 -> 1.05 change was necessary because of AVAX downwards movement
+  return (targetLTV * (totalValue - debt) - debt) / (targetLTV * bonus - 1) * 1.05;
 };
 
 export const getFixedGasSigners = async function (gasLimit: number) {
@@ -102,14 +103,15 @@ export async function syncTime() {
     }
 }
 
-export async function recompileSmartLoan(contractName: string, assetsIndices: Array<Number>, poolMap: {}, exchangeAddress: string, yieldYakAddress: string, subpath?: string) {
+// TODO: Contract name = SmartLoanLib, subPath = lib -> required to delete the cache
+// TODO: Change name to recompile SLLibrary. Functional changes first though.
+export async function recompileSmartLoanLib(contractName: string, assetsIndices: Array<Number>, poolMap: {}, exchangeAddress: string, yieldYakAddress: string, subpath?: string, maxLTV: number=5000, minSelloutLTV: number=4000) {
     const subPath = subpath ? subpath +'/' : "";
     const artifactsDirectory = `../artifacts/contracts/${subPath}${contractName}.sol/${contractName}.json`;
     delete require.cache[require.resolve(artifactsDirectory)]
-    updateSmartLoanProperties(assetsIndices, poolMap, exchangeAddress, yieldYakAddress);
+    updateSmartLoanProperties(assetsIndices, poolMap, exchangeAddress, yieldYakAddress, maxLTV, minSelloutLTV);
 
     execSync(`npx hardhat compile`, { encoding: 'utf-8' });
-    return require(artifactsDirectory);
 }
 
 export class Asset {

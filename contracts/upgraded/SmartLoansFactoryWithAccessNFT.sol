@@ -4,17 +4,19 @@ pragma solidity ^0.8.4;
 import "../abstract/NFTAccess.sol";
 import "../SmartLoansFactory.sol";
 
+
+// TODO: Cannot it simply be super.createLoan() wit NFTAccess etc?
 contract SmartLoansFactoryWithAccessNFT is NFTAccess, SmartLoansFactory {
     function createLoan() public override oneLoanPerOwner hasAccessNFT returns (SmartLoan) {
-        BeaconProxy beaconProxy = new BeaconProxy(
-            payable(address(upgradeableBeacon)),
-            abi.encodeWithSelector(SmartLoan.initialize.selector, 0)
+        DiamondBeaconProxy beaconProxy = new DiamondBeaconProxy(
+            payable(address(smartLoanRouter)),
+            abi.encodeWithSelector(DiamondInit.init.selector, 0)
         );
         SmartLoan smartLoan = SmartLoan(payable(address(beaconProxy)));
 
         //Update registry and emit event
         updateRegistry(smartLoan);
-        smartLoan.transferOwnership(msg.sender);
+        OwnershipFacet(address(smartLoan)).transferOwnership(msg.sender);
 
         emit SmartLoanCreated(address(smartLoan), msg.sender, "", 0, 0);
 
@@ -22,19 +24,19 @@ contract SmartLoansFactoryWithAccessNFT is NFTAccess, SmartLoansFactory {
     }
 
     function createAndFundLoan(bytes32 fundedAsset, uint256 _amount, uint256 _initialDebt) public override oneLoanPerOwner hasAccessNFT returns (SmartLoan) {
-        BeaconProxy beaconProxy = new BeaconProxy(payable(address(upgradeableBeacon)),
-            abi.encodeWithSelector(SmartLoan.initialize.selector));
+        DiamondBeaconProxy beaconProxy = new DiamondBeaconProxy(payable(address(smartLoanRouter)),
+            abi.encodeWithSelector(DiamondInit.init.selector));
         SmartLoan smartLoan = SmartLoan(payable(address(beaconProxy)));
 
         //Update registry and emit event
         updateRegistry(smartLoan);
 
         //Fund account with own funds and credit
-        smartLoan.fund(fundedAsset, _amount);
+        SmartLoanLogicFacet(payable(address(smartLoan))).fund(fundedAsset, _amount);
 
-        ProxyConnector.proxyCalldata(address(smartLoan), abi.encodeWithSelector(SmartLoan.borrow.selector, _initialDebt));
+        ProxyConnector.proxyCalldata(address(smartLoan), abi.encodeWithSelector(SmartLoanLogicFacet.borrow.selector, _initialDebt));
 
-        smartLoan.transferOwnership(msg.sender);
+        OwnershipFacet(address(smartLoan)).transferOwnership(msg.sender);
 
         emit SmartLoanCreated(address(smartLoan), msg.sender, fundedAsset, _amount, _initialDebt);
 

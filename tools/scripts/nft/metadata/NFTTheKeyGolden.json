@@ -1,0 +1,19 @@
+{
+  "description": "This key grants you an early access to the DeltaPrime protocol.",
+  "external_url": "https://deltaprime.io/",
+  "name": "The Key - Early Access",
+  "attributes": [
+    {
+      "trait_type": "object",
+      "value": "Key"
+    },
+    {
+      "trait_type": "material",
+      "value": "Gold"
+    },
+    {
+      "trait_type": "utility",
+      "value": "Early access"
+    }
+  ]
+}
