@@ -186,9 +186,10 @@ export default {
       const provider = rootState.network.provider;
       let tx = await state.eapNftContract.safeMint(id, signature);
 
-      await awaitConfirmation(tx, provider, 'mint');
-
-      dispatch('checkBorrowNftBalance', {id: id})
+      awaitConfirmation(tx, provider, 'mint').then(() => {
+        dispatch('initNfts');
+        dispatch('checkBorrowNftBalance', {id: id})
+      })
     },
     async mintDepositNft({ dispatch, state, rootState }, {id, signature}) {
       const provider = rootState.network.provider;
