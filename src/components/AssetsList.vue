@@ -8,11 +8,16 @@
             Total value: <span class="value">$ {{ avaxToUSD(totalValue).toFixed(2) || usd }}</span>
             <span class="vertical-line"></span>
             Your {{ profit >= 0 ? 'profit' : 'loss' }}: <span class="value" :class="{'red': profit < 0}">
-            {{ (profit !== null && avaxPrice) ? profit.toFixed(2) : '' }} AVAX</span>
+            {{ (profit !== null && avaxPrice) ? profit.toFixed(2) : '' }}
+            <img class="profit-avax-logo" src="src/assets/icons/avax-icon.svg">
+          </span>
           </span>
         </span>
       </div>
 
+      <div class="loader-container" v-if="investments.length === 0">
+        <vue-loaders-ball-beat color="#A6A3FF" scale="2"></vue-loaders-ball-beat>
+      </div>
       <div class="table">
         <div class="table__header">
           <div class="table__cell--old left">Asset</div>
@@ -812,8 +817,22 @@ export default {
   }
 }
 
-.asset-input {
+.profit-avax-logo {
+  width: 22px;
+  height: 22px;
+  margin-top: -3px;
+  margin-right: -10px;
+  margin-left: 2px;
+}
 
+.loader-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100px;
+  margin-top: 40px;
 }
 
 </style>

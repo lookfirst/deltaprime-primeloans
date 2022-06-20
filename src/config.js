@@ -2,13 +2,14 @@ import addresses from '../common/token_addresses.json';
 
 export default {
     DEFAULT_LTV: 2,
-    MAX_COLLATERAL: 6,
+    MAX_COLLATERAL: 500,
     MAX_ALLOWED_LTV: 4.5,
     LIQUIDATION_LTV: 5,
-    COMPETITION_START_BLOCK: 11644638,
+    COMPETITION_START_BLOCK: 14858534,
     chainId: 43114,
     ASSETS_CONFIG: {
       "AVAX": {name: "AVAX", symbol: "AVAX", decimals: 18},
+      "USDC": {name: "USDC", symbol: "USDC", decimals: 6, address: addresses.USDC, isStableCoin: true},
       "ETH": {name: "Ether", symbol: "ETH", decimals: 18, address: addresses.ETH},
       "BTC": {name: "Bitcoin", symbol: "BTC", decimals: 8, address: addresses.BTC},
       "USDT": {name: "USDT", symbol: "USDT", decimals: 6, address: addresses.USDT, isStableCoin: true},
@@ -21,5 +22,6 @@ export default {
     },
     nativeToken: "AVAX",
     SLIPPAGE_TOLERANCE: 0.03,
-    dataProviderId: "redstone-avalanche-prod"
+    dataProviderId: "redstone-avalanche-prod",
+    subgraph: "https://api.thegraph.com/subgraphs/name/mbare0/delta-prime"
 }

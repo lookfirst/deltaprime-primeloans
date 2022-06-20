@@ -4,7 +4,7 @@ import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {PangolinExchange} from "../typechain";
 import PangolinExchangeArtifact from '../artifacts/contracts/PangolinExchange.sol/PangolinExchange.json';
 import {execSync} from "child_process";
-import updateSmartLoanProperties from "../tools/scripts/update-smart-loan-properties"
+import updateSmartLoanLibrary from "../tools/scripts/update-smart-loan-library"
 
 const {provider} = waffle;
 
@@ -54,6 +54,83 @@ export const getSelloutRepayAmount = async function (
   return (targetLTV * (totalValue - debt) - debt) / (targetLTV * bonus - 1) * 1.04;
 };
 
+export const toRepay = function (
+    action: string,
+    debt: number,
+    initialTotalValue: number,
+    targetLTV: number,
+    bonus: number
+) {
+    switch (action) {
+        case 'CLOSE':
+            return debt;
+        case 'HEAL':
+            //bankrupt loan
+            return (debt - targetLTV * (initialTotalValue - debt)) / (1 + targetLTV);
+        default:
+            //liquidate
+            return ((1 + targetLTV) * debt - targetLTV * initialTotalValue) / (1 - targetLTV * bonus);
+
+    }
+}
+
+
+export const calculateBonus = function (
+    action: string,
+    debt: number,
+    initialTotalValue: number,
+    targetLTV: number,
+    maxBonus: number
+) {
+    switch (action) {
+        case 'CLOSE':
+            return 0;
+        case 'HEAL':
+            return 0;
+        default:
+            let possibleBonus = (1 - ((1 + targetLTV) * debt - targetLTV * initialTotalValue) / debt) / targetLTV;
+            return Math.round(Math.min(possibleBonus, maxBonus) * 1000) / 1000;
+    }
+}
+
+//simple model: we iterate over pools and repay their debts based on how much is left to repay in USD
+export const getRepayAmounts = function (
+    debts: Array<number>,
+    poolAssetsIndices: Array<number>,
+    toRepayInUsd: number,
+    mockPrices: Array<{symbol: string, value: number}>
+) {
+    let repayAmounts: Array<number> = [];
+    let leftToRepayInUsd = toRepayInUsd;
+    poolAssetsIndices.forEach(
+        (index, i) => {
+            let availableToRepayInUsd = debts[i] * mockPrices[index].value;
+            let repaidToPool = Math.min(availableToRepayInUsd, leftToRepayInUsd);
+            leftToRepayInUsd -= repaidToPool;
+            repayAmounts[i] = repaidToPool / mockPrices[index].value;
+        }
+    );
+
+    //repayAmounts are measured in appropriate tokens (not USD)
+    return repayAmounts;
+}
+
+export const toSupply = function(
+    poolAssetsIndices: Array<number>,
+    balances: Array<number>,
+    repayAmounts: Array<number>
+) {
+    //multiplied by 1.00001 to account for limited accuracy of calculations
+    let toSupply: Array<number> = [];
+
+    poolAssetsIndices.forEach(
+        (index, i) => {
+            toSupply[i] = 1.00001 * Math.max(repayAmounts[i] - balances[index], 0);
+        }
+    );
+    return toSupply;
+}
+
 export const getFixedGasSigners = async function (gasLimit: number) {
   const signers: SignerWithAddress[] = await ethers.getSigners();
   signers.forEach(signer => {
@@ -102,11 +179,11 @@ export async function syncTime() {
     }
 }
 
-export async function recompileSmartLoan(contractName: string, assetsIndices: Array<Number>, poolMap: {}, exchangeAddress: string, yieldYakAddress: string, subpath?: string) {
+export async function recompileSmartLoanLib(contractName: string, poolTokenIndices: Array<Number>, poolTokenAddresses: Array<string>,  poolMap: {}, exchangeAddress: string, yieldYakAddress: string, subpath?: string, maxLTV: number=5000, minSelloutLTV: number=4000) {
     const subPath = subpath ? subpath +'/' : "";
     const artifactsDirectory = `../artifacts/contracts/${subPath}${contractName}.sol/${contractName}.json`;
     delete require.cache[require.resolve(artifactsDirectory)]
-    updateSmartLoanProperties(assetsIndices, poolMap, exchangeAddress, yieldYakAddress);
+    await updateSmartLoanLibrary(poolTokenIndices, poolTokenAddresses, poolMap, exchangeAddress, yieldYakAddress, maxLTV, minSelloutLTV);
 
     execSync(`npx hardhat compile`, { encoding: 'utf-8' });
     return require(artifactsDirectory);

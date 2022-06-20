@@ -1,20 +1,10 @@
 import Vue from "vue";
 import config from "@/config";
+import ApolloClient, {gql} from "apollo-boost";
+import {fromWei} from "./calculate";
 
 export function transactionUrl(tx) {
     return 'https://snowtrace.io/tx/' + tx;
-}
-
-//block number from which events are considered, to increase loading of events information
-export function startingBlock() {
-    switch (config.chainId) {
-        case 43113:
-            return 6490771;
-        case 43114:
-            return 11644638;
-        default:
-            return 0;
-    }
 }
 
 export async function handleTransaction(fun, args, onSuccess, onFail) {
@@ -73,32 +63,4 @@ export async function handleCall(fun, args, onSuccess, onFail) {
 
 export function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
-}
-
-export async function fetchEventsInBatches(address, topics, provider, block = startingBlock()) {
-    const logsPromises = [];
-    let startBatch = block;
-    const currentBlock = await provider.getBlockNumber();
-
-    let endBatch = 0;
-
-    while (endBatch < currentBlock) {
-        endBatch = startBatch + 2047;
-
-        if (endBatch > currentBlock) {
-            endBatch = currentBlock;
-        }
-
-        logsPromises.push(
-            provider.getLogs({
-                fromBlock: startBatch,
-                toBlock: endBatch,
-                address: address,
-                topics: [topics]
-            }));
-
-        startBatch = endBatch + 1;
-    }
-
-    return Promise.all(logsPromises);
 }

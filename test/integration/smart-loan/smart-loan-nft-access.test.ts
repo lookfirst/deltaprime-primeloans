@@ -12,14 +12,13 @@ import MockBorrowAccessNFTArtifact
 
 import SmartLoansFactoryWithAccessNFTArtifact
     from '../../../artifacts/contracts/upgraded/SmartLoansFactoryWithAccessNFT.sol/SmartLoansFactoryWithAccessNFT.json';
-import MockSmartLoanArtifact from '../../../artifacts/contracts/mock/MockSmartLoan.sol/MockSmartLoan.json';
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {
     Asset,
     deployAndInitPangolinExchangeContract,
     fromWei,
     getFixedGasSigners,
-    recompileSmartLoan,
+    recompileSmartLoanLib,
     toBytes32,
     toWei,
 } from "../../_helpers";
@@ -27,12 +26,10 @@ import {syncTime} from "../../_syncTime"
 import {WrapperBuilder} from "redstone-evm-connector";
 import {
     CompoundingIndex,
-    ERC20Pool,
-    MockBorrowAccessNFT,
-    MockSmartLoanRedstoneProvider,
+    ERC20Pool, LTVLib,
+    MockBorrowAccessNFT, MockSmartLoanLogicFacetRedstoneProvider, MockSmartLoanLogicFacetRedstoneProvider__factory,
     OpenBorrowersRegistry__factory,
     PangolinExchange,
-    SmartLoan,
     SmartLoansFactoryWithAccessNFT,
     VariableUtilisationRatesCalculator,
     YieldYakRouter,
@@ -42,7 +39,7 @@ import {Contract} from "ethers";
 
 chai.use(solidity);
 
-const SMART_LOAN_MOCK = "MockSmartLoanRedstoneProvider";
+const {deployDiamond, deployFacet} = require('./utils/deploy-diamond');
 const {deployContract, provider} = waffle;
 const ZERO = ethers.constants.AddressZero;
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
@@ -68,18 +65,21 @@ describe('Smart loan',  () => {
         let exchange: PangolinExchange,
             owner: SignerWithAddress,
             depositor: SignerWithAddress,
+            loan: MockSmartLoanLogicFacetRedstoneProvider,
+            wrappedLoan: any,
+            ltvlib: LTVLib,
             usdPool: ERC20Pool,
             wavaxPool: ERC20Pool,
             wavaxTokenContract: Contract,
             nftContract: Contract,
             yakRouterContract: YieldYakRouter,
             smartLoansFactory: SmartLoansFactoryWithAccessNFT,
-            implementation: SmartLoan,
-            artifact: any,
             MOCK_PRICES: any,
-            AVAX_PRICE: number;
+            AVAX_PRICE: number,
+            diamondAddress: any;
 
         before("deploy provider, exchange and pool", async () => {
+            diamondAddress = await deployDiamond();
             [owner, depositor] = await getFixedGasSigners(10000000);
             nftContract = (await deployContract(owner, MockBorrowAccessNFTArtifact)) as MockBorrowAccessNFT;
 
@@ -123,10 +123,23 @@ describe('Smart loan',  () => {
             ]);
 
             smartLoansFactory = await deployContract(owner, SmartLoansFactoryWithAccessNFTArtifact) as SmartLoansFactoryWithAccessNFT;
-            artifact = await recompileSmartLoan(SMART_LOAN_MOCK, [1], { "AVAX": wavaxPool.address} , exchange.address, yakRouterContract.address, 'mock');
-            implementation = await deployContract(owner, artifact) as SmartLoan;
+            await recompileSmartLoanLib(
+                'SmartLoanLib',
+                [1],
+                [wavaxTokenAddress],
+                { "AVAX": wavaxPool.address},
+                exchange.address,
+                yakRouterContract.address,
+                'lib'
+            );
 
-            await smartLoansFactory.initialize(implementation.address);
+            // Deploy LTVLib and later link contracts to it
+            const LTVLib = await ethers.getContractFactory('LTVLib');
+            ltvlib = await LTVLib.deploy() as LTVLib;
+
+            await deployFacet("MockSmartLoanLogicFacetRedstoneProvider", diamondAddress, [], ltvlib.address);
+
+            await smartLoansFactory.initialize(diamondAddress);
 
             await smartLoansFactory.connect(owner).setAccessNFT(nftContract.address);
         });
@@ -159,10 +172,16 @@ describe('Smart loan',  () => {
 
             await wrappedSmartLoansFactory.connect(owner).createLoan();
 
-            const loanAddress = await smartLoansFactory.getLoanForOwner(owner.address);
-            const loan = ((await new ethers.Contract(loanAddress, MockSmartLoanArtifact.abi)) as MockSmartLoanRedstoneProvider).connect(owner);
+            const loan_proxy_address = await smartLoansFactory.getLoanForOwner(owner.address);
 
-            const wrappedLoan = WrapperBuilder
+            const loanFactory = await ethers.getContractFactory("MockSmartLoanLogicFacetRedstoneProvider", {
+                libraries: {
+                    LTVLib: ltvlib.address
+                }
+            });
+            loan = await loanFactory.attach(loan_proxy_address).connect(owner) as MockSmartLoanLogicFacetRedstoneProvider;
+
+            wrappedLoan = WrapperBuilder
                 .mockLite(loan)
                 .using(
                     () => {
