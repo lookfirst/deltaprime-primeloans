@@ -62,7 +62,7 @@ contract SmartLoansFactory is OwnableUpgradeable, IBorrowersRegistry {
     updateRegistry(address(smartLoan));
 
     //Fund account with own funds and credit
-    ProxyConnector.proxyCalldata(address(smartLoan), abi.encodeWithSelector(SmartLoanLogicFacet.fund.selector), false);
+    ProxyConnector.proxyCalldata(address(smartLoan), abi.encodeWithSelector(SmartLoanLogicFacet.fund.selector, fundedAsset, _amount), false);
 
     ProxyConnector.proxyCalldata(address(smartLoan), abi.encodeWithSelector(SmartLoanLogicFacet.borrow.selector, fundedAsset, _initialDebt), false);
 
