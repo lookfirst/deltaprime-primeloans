@@ -13,7 +13,7 @@
         <div class="top-info__value">89284423.39 <span class="top-info__currency">AVAX</span></div>
       </div>
 
-      <CurrencyInput :symbol="'ETH'"></CurrencyInput>
+      <CurrencyInput :symbol="'AVAX'"></CurrencyInput>
 
       <div class="transaction-summary-wrapper">
         <TransactionResultSummaryBeta>

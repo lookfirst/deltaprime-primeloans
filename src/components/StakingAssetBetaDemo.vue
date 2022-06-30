@@ -16,7 +16,7 @@
 
         <div class="header__cell">
           <div class="header__cell__label">Staked:</div>
-          <div class="header__cell__value">746.12</div>
+          <div class="header__cell__value">1259.10</div>
         </div>
 
         <div class="header__cell">
@@ -28,6 +28,7 @@
           <div class="header__cell__label">Available protocols:</div>
           <div class="protocols-list">
             <img class="protocol__icon" src="src/assets/logo/yak.svg">
+            <img class="protocol__icon" src="src/assets/logo/stargate.svg">
           </div>
         </div>
 
@@ -49,6 +50,7 @@
           </div>
           <div class="table__body">
             <StakingProtocolTableRow :asset="'USDC'" :protocol-name="'Yak'" :protocol-icon="'src/assets/logo/yak.svg'" :staked="746.12" :apy="0.0231" :daily="0.30" :total="61.91" :price="1"></StakingProtocolTableRow>
+            <StakingProtocolTableRow :asset="'USDC'" :protocol-name="'Stargate'" :protocol-icon="'src/assets/logo/stargate.svg'" :staked="512.98" :apy="0.0189" :daily="0.28" :total="34.19" :price="1"></StakingProtocolTableRow>
           </div>
         </div>
       </div>
@@ -195,7 +197,7 @@ export default {
       transition: height 200ms ease-in-out;
 
       &.expanded {
-        height: 113px;
+        height: 173px;
       }
 
       .options__table {

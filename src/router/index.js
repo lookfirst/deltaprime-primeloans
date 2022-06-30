@@ -21,12 +21,12 @@ export default new Router({
       component: Pool
     },
     {
-      path: '/prime-account',
+      path: '/prime-account-old',
       name: 'Prime Account',
       component: PrimeAccount
     },
     {
-      path: '/prime-account-beta',
+      path: '/prime-account',
       name: 'Prime Account',
       component: PrimeAccountBeta
     },

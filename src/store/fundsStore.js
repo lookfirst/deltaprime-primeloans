@@ -114,7 +114,7 @@ export default {
 
       setTimeout(() => {
         commit('setAssets', assets);
-      }, 5000);
+      }, 10000);
       console.log(assets);
     },
 
