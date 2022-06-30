@@ -6,30 +6,28 @@
         <div class="header__cell">
           <div class="asset">
             <div class="asset__icon">
-              <img src="src/assets/icons/avax-icon.svg">
+              <img src="src/assets/logo/usdc.svg">
             </div>
             <div class="asset__name">
-              AVAX
+              USDC
             </div>
           </div>
         </div>
 
         <div class="header__cell">
           <div class="header__cell__label">Staked:</div>
-          <div class="header__cell__value">19.31</div>
+          <div class="header__cell__value">746.12</div>
         </div>
 
         <div class="header__cell">
           <div class="header__cell__label">Max APY:</div>
-          <div class="header__cell__value">8.31%</div>
+          <div class="header__cell__value">2.31%</div>
         </div>
 
         <div class="header__cell">
           <div class="header__cell__label">Available protocols:</div>
           <div class="protocols-list">
             <img class="protocol__icon" src="src/assets/logo/yak.svg">
-            <img class="protocol__icon" src="src/assets/logo/beefy.png">
-            <img class="protocol__icon" src="src/assets/logo/qi.svg">
           </div>
         </div>
 
@@ -50,9 +48,7 @@
             <div class="table__header__cell">Actions</div>
           </div>
           <div class="table__body">
-            <StakingProtocolTableRow :asset="'AVAX'" :protocol-name="'Yak'" :protocol-icon="'src/assets/logo/yak.svg'" :staked="16.12" :apy="0.0831" :daily="0.11" :total="1.91" :price="16.24"></StakingProtocolTableRow>
-            <StakingProtocolTableRow :asset="'AVAX'" :protocol-name="'Beefy'" :protocol-icon="'src/assets/logo/beefy.png'" :staked="3.19" :apy="0.0781" :daily="0.03" :total="0.34" :price="16.24"></StakingProtocolTableRow>
-            <StakingProtocolTableRow :asset="'AVAX'" :protocol-name="'Benqui'" :protocol-icon="'src/assets/logo/qi.svg'" :staked="0" :apy="0.0281" :daily="0" :total="0" :price="16.24"></StakingProtocolTableRow>
+            <StakingProtocolTableRow :asset="'USDC'" :protocol-name="'Yak'" :protocol-icon="'src/assets/logo/yak.svg'" :staked="746.12" :apy="0.0231" :daily="0.30" :total="61.91" :price="1"></StakingProtocolTableRow>
           </div>
         </div>
       </div>
@@ -66,7 +62,7 @@ import StakingProtocolTableRow from './StakingProtocolTableRow';
 import PoolEventsList from './PoolHistoryList';
 
 export default {
-  name: 'StakingAssetBeta',
+  name: 'StakingAssetBetaDemo',
   components: {PoolEventsList, StakingProtocolTableRow},
   data() {
     return {
@@ -199,7 +195,7 @@ export default {
       transition: height 200ms ease-in-out;
 
       &.expanded {
-        height: 233px;
+        height: 113px;
       }
 
       .options__table {

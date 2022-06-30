@@ -3,36 +3,36 @@
     <div class="table__row">
       <div class="table__cell protocol-cell">
         <div class="protocol">
-          <img class="protocol__icon" src="src/assets/logo/yak.svg">
+          <img class="protocol__icon" :src="protocolIcon">
           <div class="protocol__details">
-            <div class="asset-name">AVAX</div>
-            <div class="by-protocol">by YAK</div>
+            <div class="asset-name">{{ asset }}</div>
+            <div class="by-protocol">by {{protocolName}}</div>
           </div>
         </div>
       </div>
 
       <div class="table__cell">
         <div class="double-value staked-balance">
-          <div class="double-value__pieces">15.32</div>
-          <div class="double-value__usd">{{ 1525.11 | usd }}</div>
+          <div class="double-value__pieces">{{ staked }}</div>
+          <div class="double-value__usd">{{ staked * price | usd }}</div>
         </div>
       </div>
 
       <div class="table__cell">
-        {{ 0.0135 | percent }}
+        {{ apy | percent }}
       </div>
 
       <div class="table__cell">
         <div class="double-value">
-          <div class="double-value__pieces">0.01</div>
-          <div class="double-value__usd">{{ 0.15 | usd }}</div>
+          <div class="double-value__pieces">{{ daily }}</div>
+          <div class="double-value__usd">{{ daily * price | usd }}</div>
         </div>
       </div>
 
       <div class="table__cell">
         <div class="double-value">
-          <div class="double-value__pieces">0.78</div>
-          <div class="double-value__usd">{{ 3.35 | usd }}</div>
+          <div class="double-value__pieces">{{ total }}</div>
+          <div class="double-value__usd">{{ total * price | usd }}</div>
         </div>
       </div>
 
@@ -56,6 +56,16 @@ import SwapModal from './SwapModal';
 
 export default {
   name: 'StakingProtocolTableRow',
+  props: {
+    asset: null,
+    protocolName: null,
+    protocolIcon: null,
+    staked: null,
+    apy: null,
+    daily: null,
+    total: null,
+    price: null,
+  },
   methods: {
     openStakeModal() {
       console.log('open stake modal');

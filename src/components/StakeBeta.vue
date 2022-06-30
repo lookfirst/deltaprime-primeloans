@@ -1,16 +1,19 @@
 <template>
   <div class="stake-beta-component">
     <StakingAssetBeta></StakingAssetBeta>
-    <StakingAssetBeta></StakingAssetBeta>
-    <StakingAssetBeta></StakingAssetBeta>
+    <StakingAssetBetaDemo></StakingAssetBetaDemo>
   </div>
 </template>
 
 <script>
 import StakingAssetBeta from './StakingAssetBeta';
+import StakingAssetBetaDemo from './StakingAssetBetaDemo';
 export default {
   name: 'StakeBeta',
-  components: {StakingAssetBeta}
+  components: {
+    StakingAssetBeta,
+    StakingAssetBetaDemo
+  }
 };
 </script>
 
