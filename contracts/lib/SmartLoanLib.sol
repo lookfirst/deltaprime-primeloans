@@ -21,7 +21,7 @@ library SmartLoanLib {
 
     address private constant _POOL_ADDRESS = 0x5ff1DE6091871adAAe64E2Ec4feD754628482868;
 
-  address private constant _EXCHANGE_ADDRESS = 0xC9a43158891282A2B1475592D5719c001986Aaec;
+  address private constant _EXCHANGE_ADDRESS = 0x51A1ceB83B83F1985a81C295d1fF28Afef186E02;
 
     // redstone-evm-connector price providers
     address private constant _PRICE_PROVIDER_1 = 0x981bdA8276ae93F567922497153de7A5683708d3;
@@ -63,7 +63,7 @@ library SmartLoanLib {
     }
 
     function getYieldYakRouter() internal view returns (IYieldYakRouter) {
-  return IYieldYakRouter(0x4C4a2f8c81640e47606d3fd77B353E87Ba015584);
+  return IYieldYakRouter(0x36b58F5C1969B7b6591D752ea6F5486D069010AB);
     }
 
     function getMaxBlockTimestampDelay() internal view returns (uint256) {
@@ -90,7 +90,8 @@ library SmartLoanLib {
 
     function getPools() internal view returns (ERC20Pool[1] memory) {
         return [
-      ERC20Pool(0xD84379CEae14AA33C123Af12424A37803F885889)
+      ERC20Pool(0x4C4a2f8c81640e47606d3fd77B353E87Ba015584),
+      ERC20Pool(0xD8a5a9b31c3C0232E196d518E89Fd8bF83AcAd43)
         ];
     }
 
@@ -112,7 +113,8 @@ library SmartLoanLib {
 
     //TODO: remember that it will be updated with a deployment script...
     function getPoolAddress(bytes32 poolToken) internal view returns (address) {
-    if (poolToken == bytes32("AVAX")) return 0x04C89607413713Ec9775E14b954286519d836FEf;
+    if (poolToken == bytes32("AVAX")) return 0x4C4a2f8c81640e47606d3fd77B353E87Ba015584;
+    if (poolToken == bytes32("USDC")) return 0xD8a5a9b31c3C0232E196d518E89Fd8bF83AcAd43;
 
         return address(0);
     }
