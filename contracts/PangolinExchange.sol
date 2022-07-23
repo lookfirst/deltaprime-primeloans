@@ -156,7 +156,7 @@ contract PangolinExchange is OwnableUpgradeable, IAssetsExchange, ReentrancyGuar
    * Returns a path containing tokens' addresses
    * @dev _token ERC20 token's address
    **/
-  function getPath(address _token1, address _token2) private view returns (address[] memory) {
+  function getPath(address _token1, address _token2) public view returns (address[] memory) {
     address[] memory path;
     address nativeTokenAddress = getAssetAddress(getAllAssets()[0]);
 

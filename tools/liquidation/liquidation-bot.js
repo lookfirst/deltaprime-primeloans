@@ -5,7 +5,7 @@ import LOAN_FACTORY from '../../deployments/mainnet/SmartLoansFactory.json'
 import LOAN_LOGIC from '../../artifacts/contracts/faucets/SmartLoanLogicFacet.sol/SmartLoanLogicFacet.json'
 import LOAN_LIQUIDATION from '../../artifacts/contracts/faucets/SmartLoanLiquidationFacet.sol/SmartLoanLiquidationFacet.json'
 import addresses from '../../common/token_addresses.json';
-import {fromBytes32, toSupply} from "../../test/_helpers";
+import {toBytes32, fromBytes32, toSupply} from "../../test/_helpers";
 
 const args = require('yargs').argv;
 const https = require('https');
@@ -35,6 +35,7 @@ let provider = new ethers.providers.JsonRpcProvider(RPC_URL)
 let wallet = (new ethers.Wallet(PRIVATE_KEY)).connect(provider);
 const factory = new ethers.Contract(LOAN_FACTORYTUP.address, LOAN_FACTORY.abi, wallet);
 const exchange = new ethers.Contract(PANGOLIN_EXCHANGETUP.address, PANGOLIN_EXCHANGE.abi, wallet);
+
 
 
 async function wrapLoanStatus(loanAddress) {
@@ -152,11 +153,23 @@ export async function liquidateLoan(loanAddress) {
         await token.approve(loan.address, allowance);
     }
 
-    const bonusInWei = (bonus * 1000).toFixed(0);
 
-    let tx = await liquidateFacet.liquidateLoan(repayAmountsInWei, bonusInWei, {gasLimit: 8000000});
-    console.log("Waiting for tx: " + tx.hash);
-    let receipt = await provider.waitForTransaction(tx.hash);
+    // const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
+    // const LiquidationFlashloan = await ethers.getContractFactory('LiquidationFlashloan');
+    // const liquidationFlashloan = await LiquidationFlashloan.deploy(
+    //     'address _addressProvider',
+    //     liquidateFacet.address,
+    //     '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106',
+    //     PANGOLIN_EXCHANGETUP.address    
+    // );
+    // //todo: flashloan ABI?
+
+    const bonusInWei = (bonus * 1000).toFixed(0);
+    const flashLoan = new ethers.Contract(flashloanAddress, flashloanABI, wallet); 
+    const flashLoanTx = await flashLoan.flashloan(wallet.address, poolTokens, repayAmounts, new Array(poolTokens.length).fill(0), wallet.address, toBytes32(bonusInWei), 0);
+
+    console.log("Waiting for flashLoanTx: " + flashLoanTx.hash);
+    let receipt = await provider.waitForTransaction(flashLoanTx.hash);
     console.log("Sellout processed with " + (receipt.status == 1 ? "success" : "failure"));
 }
 

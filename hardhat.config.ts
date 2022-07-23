@@ -46,24 +46,24 @@ export default {
       url: 'http://127.0.0.1:8545/',
       chainId: 1337
     },
-    fuji: {
-      url: 'https://api.avax-test.network/ext/bc/C/rpc',
-      gasPrice: 225000000000,
-      chainId: 43113,
-      accounts: [getKey('fuji', 'deployer'), getKey('fuji', 'admin')]
-    },
-    mainnet: {
-      url: 'https://api.avax.network/ext/bc/C/rpc',
-      gasPrice: 100000000000,
-      chainId: 43114,
-      accounts: [getKey('mainnet', 'deployer'), getKey('mainnet', 'admin')]
-    },
-    fantom: {
-      url: 'https://rpc.ftm.tools/',
-      gasPrice: 250000000000,
-      chainId: 250,
-      accounts: [getKey('fantom', 'deployer')]
-    }
+    // fuji: {
+    //   url: 'https://api.avax-test.network/ext/bc/C/rpc',
+    //   gasPrice: 225000000000,
+    //   chainId: 43113,
+    //   accounts: [getKey('fuji', 'deployer'), getKey('fuji', 'admin')]
+    // },
+    // mainnet: {
+    //   url: 'https://api.avax.network/ext/bc/C/rpc',
+    //   gasPrice: 100000000000,
+    //   chainId: 43114,
+    //   accounts: [getKey('mainnet', 'deployer'), getKey('mainnet', 'admin')]
+    // },
+    // fantom: {
+    //   url: 'https://rpc.ftm.tools/',
+    //   gasPrice: 250000000000,
+    //   chainId: 250,
+    //   accounts: [getKey('fantom', 'deployer')]
+    // }
   },
   paths: {
     tests: "./test"
