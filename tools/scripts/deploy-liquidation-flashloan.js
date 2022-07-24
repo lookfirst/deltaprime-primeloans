@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 import PANGOLIN_EXCHANGETUP from '../../deployments/mainnet/PangolinExchangeTUP.json'
 
-const loanAddress = '0xf3cdfA877bB0615b50D066e41404668f016feE1E' //todo: temp factory address, make variable?
+const loanAddress = '0xf3cdfA877bB0615b50D066e41404668f016feE1E' //todo: temp factory address, make
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
 const aavePoolAddressesProviderAdress = '0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb';
 
