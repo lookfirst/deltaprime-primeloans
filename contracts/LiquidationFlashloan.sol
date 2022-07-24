@@ -122,7 +122,6 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     );
   }
 
-
   function swapToNegateDeficits(AssetAmount memory deficit, AssetAmount memory surplus) private returns (bool shouldBreak){
         uint256 soldTokenAmountNeeded = pangolinExchange
           .getEstimatedTokensForTokens(

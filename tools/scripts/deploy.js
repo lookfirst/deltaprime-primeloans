@@ -1,3 +1,3 @@
 const {deploy} = require('./deploy-contract');
 
-deploy("LiquidationFlashloan");
+deploy("CONTRACT_NAME");
