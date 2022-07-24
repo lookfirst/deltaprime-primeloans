@@ -57,10 +57,10 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
   ) external override returns (bool) {
     // approves
     for (uint32 i = 0; i < _assets.length; i++) {
-      address(_assets[i]).safeApprove(address(this), 0);
-      address(_assets[i]).safeApprove(address(this), _amounts[i]);
-      address(POOL).safeApprove(address(this), 0);
-      address(POOL).safeApprove(address(this), _amounts[i] + _premiums[i]);
+      address(_assets[i]).safeApprove(_initiator, 0);
+      address(_assets[i]).safeApprove(_initiator, _amounts[i]);
+      address(POOL).safeApprove(_initiator, 0);
+      address(POOL).safeApprove(_initiator, _amounts[i] + _premiums[i]);
     }
 
     // liquidation
@@ -70,7 +70,7 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     // calculate surpluses & deficits
     for (uint32 i = 0; i < _assets.length; i++) {
       int256 amount = int256(
-        IERC20Metadata(_assets[i]).balanceOf(address(this))
+        IERC20Metadata(_assets[i]).balanceOf(_initiator)
       ) -
         int256(_amounts[i]) -
         int256(_premiums[i]);
@@ -84,18 +84,10 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     // swap to negate deficits
     for (uint32 i = 0; i < assetDeficit.length; i++) {
       for (uint32 j = 0; j < assetSurplus.length; j++) {
-        if(swapToNegateDeficits(assetDeficit[i], assetSurplus[j])){
+        if(swapToNegateDeficits(assetDeficit[i], assetSurplus[j], _initiator)){
           break;
         }
       }
-    }
-
-    // send remaining tokens (bonus) to initiator
-    for (uint32 i = 0; i < assetSurplus.length; i++) {
-      address(assetSurplus[i].asset).safeTransfer(
-        _initiator,
-        assetSurplus[i].amount
-      );
     }
 
     // success
@@ -122,36 +114,36 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     );
   }
 
-  function swapToNegateDeficits(AssetAmount memory deficit, AssetAmount memory surplus) private returns (bool shouldBreak){
+  function swapToNegateDeficits(AssetAmount memory _deficit, AssetAmount memory _surplus, address _initiator) private returns (bool shouldBreak){
         uint256 soldTokenAmountNeeded = pangolinExchange
           .getEstimatedTokensForTokens(
-            deficit.amount,
-            surplus.asset,
-            deficit.asset
+            _deficit.amount,
+            _surplus.asset,
+            _deficit.asset
           );
           
-        if (soldTokenAmountNeeded > surplus.amount) {
+        if (soldTokenAmountNeeded > _surplus.amount) {
           amounts = pangolinRouter.swapExactTokensForTokens(
-            surplus.amount,
-            (soldTokenAmountNeeded * deficit.amount) /
-              surplus.amount,
-            pangolinExchange.getPath(deficit.asset, surplus.asset),
-            address(this),
+            _surplus.amount,
+            (soldTokenAmountNeeded * _deficit.amount) /
+              _surplus.amount,
+            pangolinExchange.getPath(_deficit.asset, _surplus.asset),
+            _initiator,
             block.timestamp
           );
           return false;
         } else {
           amounts = pangolinRouter.swapTokensForExactTokens(
-            deficit.amount,
+            _deficit.amount,
             soldTokenAmountNeeded,
-            pangolinExchange.getPath(surplus.asset, deficit.asset),
-            address(this),
+            pangolinExchange.getPath(_surplus.asset, _deficit.asset),
+            _initiator,
             block.timestamp
           );
-          deficit.amount =
-            deficit.amount -
+          _deficit.amount =
+            _deficit.amount -
             amounts[amounts.length - 1];
-          surplus.amount = surplus.amount - amounts[0];
+          _surplus.amount = _surplus.amount - amounts[0];
           return true;
         }
   }

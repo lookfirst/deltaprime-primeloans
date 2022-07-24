@@ -154,9 +154,6 @@ export async function liquidateLoan(loanAddress) {
         await token.approve(loan.address, allowance);
     }
 
-
-    //todo: define flashloanAddress and flashloanABI (run 9_liquidation_flashloan)
-    //liquidate loan will automatically use flashloanLiquidator (add flag?)
     const bonusInWei = (bonus * 1000).toFixed(0);
     const flashLoan = deployLiquidationFlashloan(loanAddress); 
     const flashLoanTx = await flashLoan.flashloan(wallet.address, poolTokens, repayAmounts, new Array(poolTokens.length).fill(0), wallet.address, toBytes32(bonusInWei), 0);
