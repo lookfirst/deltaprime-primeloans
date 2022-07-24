@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.15;
+pragma solidity ^0.8.4;
 
 import {IPoolAddressesProvider} from "../../interfaces/IPoolAddressesProvider.sol";
 import {IPool} from "../../interfaces/IPool.sol";

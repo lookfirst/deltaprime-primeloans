@@ -1,4 +1,4 @@
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.4;
 
 import "./aave_v3/flashloan/base/FlashLoanReceiverBase.sol";
 import "./faucets/SmartLoanLiquidationFacet.sol";
@@ -20,6 +20,7 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
 
   AssetAmount[] assetSurplus;
   AssetAmount[] assetDeficit;
+  uint256[] amounts;
 
   SmartLoanLiquidationFacet liquidationFacet;
   IPangolinRouter pangolinRouter;
@@ -81,36 +82,9 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     }
 
     // swap to negate deficits
-    uint256[] memory amounts;
     for (uint32 i = 0; i < assetDeficit.length; i++) {
       for (uint32 j = 0; j < assetSurplus.length; j++) {
-        uint256 soldTokenAmountNeeded = pangolinExchange
-          .getEstimatedTokensForTokens(
-            assetDeficit[i].amount,
-            assetSurplus[j].asset,
-            assetDeficit[i].asset
-          );
-        if (soldTokenAmountNeeded > assetSurplus[j].amount) {
-          amounts = pangolinRouter.swapExactTokensForTokens(
-            assetSurplus[j].amount,
-            (soldTokenAmountNeeded * assetDeficit[i].amount) /
-              assetSurplus[j].amount,
-            pangolinExchange.getPath(_assets[i], _assets[j]),
-            address(this),
-            block.timestamp
-          );
-        } else {
-          amounts = pangolinRouter.swapTokensForExactTokens(
-            assetDeficit[i].amount,
-            soldTokenAmountNeeded,
-            pangolinExchange.getPath(_assets[j], _assets[i]),
-            address(this),
-            block.timestamp
-          );
-          assetDeficit[i].amount =
-            assetDeficit[i].amount -
-            amounts[amounts.length - 1];
-          assetSurplus[j].amount = assetSurplus[j].amount - amounts[0];
+        if(swapToNegateDeficits(assetDeficit[i], assetSurplus[j])){
           break;
         }
       }
@@ -146,6 +120,41 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
       _params,
       _referralCode
     );
+  }
+
+
+  function swapToNegateDeficits(AssetAmount memory deficit, AssetAmount memory surplus) private returns (bool shouldBreak){
+        uint256 soldTokenAmountNeeded = pangolinExchange
+          .getEstimatedTokensForTokens(
+            deficit.amount,
+            surplus.asset,
+            deficit.asset
+          );
+          
+        if (soldTokenAmountNeeded > surplus.amount) {
+          amounts = pangolinRouter.swapExactTokensForTokens(
+            surplus.amount,
+            (soldTokenAmountNeeded * deficit.amount) /
+              surplus.amount,
+            pangolinExchange.getPath(deficit.asset, surplus.asset),
+            address(this),
+            block.timestamp
+          );
+          return false;
+        } else {
+          amounts = pangolinRouter.swapTokensForExactTokens(
+            deficit.amount,
+            soldTokenAmountNeeded,
+            pangolinExchange.getPath(surplus.asset, deficit.asset),
+            address(this),
+            block.timestamp
+          );
+          deficit.amount =
+            deficit.amount -
+            amounts[amounts.length - 1];
+          surplus.amount = surplus.amount - amounts[0];
+          return true;
+        }
   }
 
   function toUint256(bytes memory _bytes)
