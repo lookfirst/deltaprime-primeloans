@@ -31,7 +31,7 @@ import {
     YieldYakRouter__factory
 } from "../../../typechain";
 import {BigNumber, Contract, ContractFactory} from "ethers";
-import {liquidateLoan} from '../../../tools/liquidation/liquidation-bot'
+import {liquidateLoan} from '../../../tools/liquidation/liquidation-bot';
 import redstone from "redstone-api";
 import {parseUnits} from "ethers/lib/utils";
 import fs from "fs";

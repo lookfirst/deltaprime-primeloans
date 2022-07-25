@@ -18,6 +18,17 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     uint256 amount;
   }
 
+  struct FlashLoanArgs {
+    address _receiverAddress;
+    address[] _assets;
+    uint256[] _amounts;
+    uint256[] _interestRateModes;
+    address _onBehalfOf;
+    bytes _params;
+    uint16 _referralCode;
+    address _liquidationFacet;
+  }
+
   AssetAmount[] assetSurplus;
   AssetAmount[] assetDeficit;
   uint256[] amounts;
@@ -114,6 +125,30 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     );
   }
 
+  function flashloan2(
+    FlashLoanArgs calldata args
+    // address _receiverAddress,
+    // address[] calldata _assets,
+    // uint256[] calldata _amounts,
+    // uint256[] calldata _interestRateModes,
+    // address _onBehalfOf,
+    // bytes calldata _params,
+    // uint16 _referralCode,
+    // address _liquidationFacet
+  ) public onlyOwner {
+    // setLiquidationFacet(_liquidationFacet);
+    liquidationFacet = SmartLoanLiquidationFacet(args._liquidationFacet);
+    POOL.flashLoan(
+      args._receiverAddress,
+      args._assets,
+      args._amounts,
+      args._interestRateModes,
+      args._onBehalfOf,
+      args._params,
+      args._referralCode
+    );
+  }
+
   function swapToNegateDeficits(AssetAmount memory _deficit, AssetAmount memory _surplus, address _initiator) private returns (bool shouldBreak){
         uint256 soldTokenAmountNeeded = pangolinExchange
           .getEstimatedTokensForTokens(
@@ -147,6 +182,10 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
           return true;
         }
   }
+
+  // function setLiquidationFacet(address _liquidationFacet) public onlyOwner {
+  //   liquidationFacet = SmartLoanLiquidationFacet(_liquidationFacet);
+  // }
 
   function toUint256(bytes memory _bytes)
     internal

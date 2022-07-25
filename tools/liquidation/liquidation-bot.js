@@ -156,13 +156,19 @@ export async function liquidateLoan(loanAddress) {
 
     const bonusInWei = (bonus * 1000).toFixed(0);
     const flashLoan = await deployLiquidationFlashloan(loanAddress); 
-    const flashLoanTx = await flashLoan.flashloan(wallet.address, 
-        poolTokens, 
-        repayAmounts, 
-        new Array(poolTokens.length).fill(0), 
-        wallet.address, 
-        toBytes32(bonusInWei), 
-        0);
+
+    const flashLoanTx = await flashLoan.flashloan2(
+    {
+        _receiverAddress: wallet.address, 
+        _assets: poolTokens, 
+        _amounts: repayAmounts, 
+        _interestRateModes: new Array(poolTokens.length).fill(0), 
+        _onBehalfOf: wallet.address, 
+        _params: toBytes32(bonusInWei), 
+        _referralCode: 0,
+        _liquidationFacet: loanAddress
+    }
+    );
 
     console.log("Waiting for flashLoanTx: " + flashLoanTx.hash);
     let receipt = await provider.waitForTransaction(flashLoanTx.hash);
