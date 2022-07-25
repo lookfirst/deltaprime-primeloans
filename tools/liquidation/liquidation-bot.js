@@ -156,18 +156,28 @@ export async function liquidateLoan(loanAddress) {
 
     const bonusInWei = (bonus * 1000).toFixed(0);
     const flashLoan = await deployLiquidationFlashloan(loanAddress); 
-
-    const flashLoanTx = await flashLoan.flashloan2(
-    {
-        _receiverAddress: wallet.address, 
-        _assets: poolTokens, 
-        _amounts: repayAmounts, 
-        _interestRateModes: new Array(poolTokens.length).fill(0), 
-        _onBehalfOf: wallet.address, 
-        _params: toBytes32(bonusInWei), 
-        _referralCode: 0,
-        _liquidationFacet: loanAddress
-    }
+    const poolTokens2 = ['0x5947bb275c521040051d82396192181b413227a3'];
+    const repayAmountsInWei2 = [1000];
+    //wrap to add redstone
+    // const flashLoanTx = await flashLoan.executeFlashloan(
+    // {
+    //     _receiverAddress: wallet.address, 
+    //     _assets: poolTokens2, 
+    //     _amounts: repayAmountsInWei2, 
+    //     _interestRateModes: new Array(poolTokens.length).fill(0), 
+    //     _onBehalfOf: wallet.address, 
+    //     _params: toBytes32(bonusInWei), 
+    //     _referralCode: 0,
+    //     // smartloan address
+    //     _liquidationFacet: loanAddress
+    // }
+    // );
+    const flashLoanTx = await flashLoan.executeOperation(
+        poolTokens,
+        repayAmountsInWei,
+        new Array(poolTokens.length).fill(0),
+        wallet.address,
+        toBytes32(bonusInWei)
     );
 
     console.log("Waiting for flashLoanTx: " + flashLoanTx.hash);
