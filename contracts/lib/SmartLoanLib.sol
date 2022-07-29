@@ -26,8 +26,28 @@ library SmartLoanLib {
 
     // redstone-evm-connector price providers
     address private constant _PRICE_PROVIDER_1 = 0x981bdA8276ae93F567922497153de7A5683708d3;
-
-    address private constant _PRICE_PROVIDER_2 = 0x3BEFDd935b50F172e696A5187DBaCfEf0D208e48;
+    address private constant _PRICE_PROVIDER_2 = 0xAE9D49Ea64DF38B9fcbC238bc7004a1421f7eeE8;
+    address private constant _PRICE_PROVIDER_3 = 0xbC5a06815ee80dE7d20071703C1F1B8fC511c7d4;
+    address private constant _PRICE_PROVIDER_4 = 0x2D0645D863a4eE15664761ea1d99fF2bae8aAe35;
+    address private constant _PRICE_PROVIDER_5 = 0x9456dd79c3608cF463d975F76f7658f87a41Cd6C;
+    address private constant _PRICE_PROVIDER_6 = 0x4C6f83Faa74106139FcB08d4E49568e0Df222815;
+    address private constant _PRICE_PROVIDER_7 = 0x60930D9f74811B525356E68D23977baEAb7706d0;
+    address private constant _PRICE_PROVIDER_8 = 0x4CF8310ABAe9CA2ACD85f460B509eE495F36eFAF;
+    address private constant _PRICE_PROVIDER_9 = 0xc1D5b940659e57b7bDF8870CDfC43f41Ca699460;
+    address private constant _PRICE_PROVIDER_10 = 0x2BC37a0368E86cA0d14Bc8788D45c75deabaC064;
+    address private constant _PRICE_PROVIDER_11 = 0x9277491f485460575918B43f5d6D5b2BB8c5A62d;
+    address private constant _PRICE_PROVIDER_12 = 0x11D23F3dbf8B8e1cf61AeF77A2ea0592Bc9860E0;
+    address private constant _PRICE_PROVIDER_13 = 0x41FB6b8d0f586E73d575bC57CFD29142B3214A47;
+    address private constant _PRICE_PROVIDER_14 = 0x91dC1fe6472e18Fd2C9407e438dD022f22891a4f;
+    address private constant _PRICE_PROVIDER_15 = 0xa50abc5D76dAb99d5fe59FD32f239Bd37d55025f;
+    address private constant _PRICE_PROVIDER_16 = 0xC1068312a6333e6601f937c4773065B70D38A5bF;
+    address private constant _PRICE_PROVIDER_17 = 0x496f4E8aC11076350A59b88D2ad62bc20d410EA3;
+    address private constant _PRICE_PROVIDER_18 = 0x4bbb86992E94AA209c52ecfd38897A18bde8E39D;
+    address private constant _PRICE_PROVIDER_19 = 0x3BEFDd935b50F172e696A5187DBaCfEf0D208e48;
+    address private constant _PRICE_PROVIDER_20 = 0xF5c14165fb10Ac4926d52504a9B45550411A3C0F;
+    address private constant _PRICE_PROVIDER_21 = 0xDf6b1cA313beE470D0142279791Fa760ABF5C537;
+    address private constant _PRICE_PROVIDER_22 = 0x1Cd8F9627a2838a7DAE6b98CF71c08B9CbF5174a;
+    address private constant _PRICE_PROVIDER_23 = 0xe9Fa2869C5f6fC3A0933981825564FD90573A86D;
 
     address private constant _WAVAX_ADDRESS = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
