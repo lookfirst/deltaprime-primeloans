@@ -14,7 +14,7 @@ const interval = args.interval ? args.interval : 10;
 const minutesSync = args.minutesSync ? args.minutesSync : 0;
 const ethers = require('ethers');
 const {getUrlForNetwork} = require("../scripts/helpers");
-const {WrapperBuilder} = require("redstone-evm-connector");
+const {WrapperBuilder} = require("../../../redstone-evm-connector");
 const fs = require('fs');
 const {calculateBonus, fromWei, toRepay, formatUnits, getRepayAmounts} = require("../../test/_helpers");
 const {parseUnits} = require("ethers/lib/utils");
@@ -165,7 +165,7 @@ export async function liquidateLoan(loanAddress) {
         assets: poolTokens, 
         amounts: repayAmountsInWei, 
         interestRateModes: new Array(poolTokens.length).fill(0), 
-        params: "", //todo: calldata?
+        params: '0x' + await loan.getPriceData(),
         bonus: bonusInWei,
         liquidator: wallet.address,
         liquidationFacet: loanAddress // todo: change name to smartloan address

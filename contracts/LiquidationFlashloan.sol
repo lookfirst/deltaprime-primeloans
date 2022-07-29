@@ -70,11 +70,7 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
   ) public override returns (bool) {
 
     // liquidate loan
-    // todo: redstone calldata -> _params?
-    // ECDSA: invalid signature 'v' value
-     ProxyConnector.proxyCalldata(address(liquidationFacet), 
-      abi.encodeWithSelector(SmartLoanLiquidationFacet.liquidateLoan.selector, _amounts, bonus), 
-      false);
+    address(liquidationFacet).call(abi.encodePacked(abi.encodeWithSelector(SmartLoanLiquidationFacet.liquidateLoan.selector, _amounts, bonus), _params));
 
     // calculate surpluses & deficits
     for (uint32 i = 0; i < _assets.length; i++) {
@@ -114,6 +110,8 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
       IERC20(_assets[i]).approve(address(POOL), 0);
       IERC20(_assets[i]).approve(address(POOL), _amounts[i] + _premiums[i]);
     }
+
+    console.log('finish');
 
     // success
     return true;
