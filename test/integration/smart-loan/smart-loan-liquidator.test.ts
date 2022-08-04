@@ -1,14 +1,14 @@
-import {ethers, waffle} from 'hardhat'
-import chai, {expect} from 'chai'
-import {solidity} from "ethereum-waffle";
+import { ethers, waffle } from 'hardhat'
+import chai, { expect } from 'chai'
+import { solidity } from "ethereum-waffle";
 
 import VariableUtilisationRatesCalculatorArtifact
     from '../../../artifacts/contracts/VariableUtilisationRatesCalculator.sol/VariableUtilisationRatesCalculator.json';
 import ERC20PoolArtifact from '../../../artifacts/contracts/ERC20Pool.sol/ERC20Pool.json';
 import CompoundingIndexArtifact from '../../../artifacts/contracts/CompoundingIndex.sol/CompoundingIndex.json';
 import SmartLoansFactoryArtifact from '../../../artifacts/contracts/SmartLoansFactory.sol/SmartLoansFactory.json';
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
-import {WrapperBuilder} from "redstone-evm-connector";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { WrapperBuilder } from "redstone-evm-connector";
 import {
     Asset,
     deployAndInitPangolinExchangeContract,
@@ -17,7 +17,7 @@ import {
     toBytes32,
     toWei
 } from "../../_helpers";
-import {syncTime} from "../../_syncTime"
+import { syncTime } from "../../_syncTime"
 import {
     CompoundingIndex,
     ERC20Pool,
@@ -30,18 +30,18 @@ import {
     VariableUtilisationRatesCalculator,
     YieldYakRouter__factory
 } from "../../../typechain";
-import {BigNumber, Contract, ContractFactory} from "ethers";
-import {liquidateLoan} from '../../../tools/liquidation/liquidation-bot';
+import { BigNumber, Contract, ContractFactory } from "ethers";
+import { liquidateLoan } from '../../../tools/liquidation/liquidation-bot';
 import redstone from "redstone-api";
-import {parseUnits} from "ethers/lib/utils";
+import { parseUnits } from "ethers/lib/utils";
 import fs from "fs";
 import path from "path";
 
-const {deployDiamond, deployFacet, replaceFacet} = require('../../../tools/diamond/deploy-diamond');
+const { deployDiamond, deployFacet, replaceFacet } = require('../../../tools/diamond/deploy-diamond');
 
 chai.use(solidity);
 
-const {deployContract, provider} = waffle;
+const { deployContract, provider } = waffle;
 const pangolinRouterAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
 const usdTokenAddress = '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E';
 const wavaxTokenAddress = '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7';
@@ -59,11 +59,11 @@ const wavaxAbi = [
     ...erc20ABI
 ]
 
-const LIQUIDATOR_PRIVATE_KEY =  fs.readFileSync(path.resolve(__dirname, "../../../tools/liquidation/.private")).toString().trim();
+const LIQUIDATOR_PRIVATE_KEY = fs.readFileSync(path.resolve(__dirname, "../../../tools/liquidation/.private")).toString().trim();
 const rpcProvider = new ethers.providers.JsonRpcProvider()
 const liquidatorWallet = (new ethers.Wallet(LIQUIDATOR_PRIVATE_KEY)).connect(rpcProvider);
 
-describe('Test liquidator',  () => {
+describe('Test liquidator', () => {
     before("Synchronize blockchain time", async () => {
         await syncTime();
     });
@@ -124,7 +124,7 @@ describe('Test liquidator',  () => {
                 "SmartLoanLib",
                 [0],
                 [wavaxTokenAddress],
-                {'AVAX': wavaxPool.address},
+                { 'AVAX': wavaxPool.address },
                 exchange.address,
                 yakRouterContract.address,
                 'lib'
@@ -135,13 +135,13 @@ describe('Test liquidator',  () => {
             ltvLib = await LTVLib.deploy() as LTVLib;
 
 
-            await wavaxTokenContract.connect(depositor).deposit({value: toWei("1000")});
+            await wavaxTokenContract.connect(depositor).deposit({ value: toWei("1000") });
             await wavaxTokenContract.connect(depositor).approve(wavaxPool.address, toWei("1000"));
             await wavaxPool.connect(depositor).deposit(toWei("1000"));
 
 
             //load liquidator wallet
-            await wavaxTokenContract.connect(liquidatorWallet).deposit({value: toWei("1000")});
+            await wavaxTokenContract.connect(liquidatorWallet).deposit({ value: toWei("1000") });
 
             smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
 
@@ -170,7 +170,7 @@ describe('Test liquidator',  () => {
 
 
         it("should fund, borrow and withdraw, making loan LTV higher than 500%", async () => {
-            await wavaxTokenContract.connect(borrower).deposit({value: toWei("100")});
+            await wavaxTokenContract.connect(borrower).deposit({ value: toWei("100") });
             await wavaxTokenContract.connect(borrower).approve(wrappedLoan.address, toWei("100"));
             await wrappedLoan.fund(toBytes32("AVAX"), toWei("100"));
 

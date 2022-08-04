@@ -22,7 +22,7 @@ library SmartLoanLib {
 
     address private constant _POOL_ADDRESS = 0x5ff1DE6091871adAAe64E2Ec4feD754628482868;
 
-  address private constant _EXCHANGE_ADDRESS = 0xA9d0Fb5837f9c42c874e16da96094b14Af0e2784;
+  address private constant _EXCHANGE_ADDRESS = 0x51A1ceB83B83F1985a81C295d1fF28Afef186E02;
 
     // redstone-evm-connector price providers
     address private constant _PRICE_PROVIDER_1 = 0x981bdA8276ae93F567922497153de7A5683708d3;
@@ -84,7 +84,7 @@ library SmartLoanLib {
     }
 
     function getYieldYakRouter() internal view returns (IYieldYakRouter) {
-  return IYieldYakRouter(0xb830887eE23d3f9Ed8c27dbF7DcFe63037765475);
+  return IYieldYakRouter(0xf4B146FbA71F41E0592668ffbF264F1D186b2Ca8);
     }
 
     function getMaxBlockTimestampDelay() internal view returns (uint256) {
@@ -103,6 +103,90 @@ library SmartLoanLib {
         return _PRICE_PROVIDER_2;
     }
 
+    function getPriceProvider3() internal view returns (address) {
+        return _PRICE_PROVIDER_3;
+    }
+
+        function getPriceProvider4() internal view returns (address) {
+        return _PRICE_PROVIDER_4;
+    }
+
+        function getPriceProvider5() internal view returns (address) {
+        return _PRICE_PROVIDER_5;
+    }
+
+        function getPriceProvider6() internal view returns (address) {
+        return _PRICE_PROVIDER_6;
+    }
+
+        function getPriceProvider7() internal view returns (address) {
+        return _PRICE_PROVIDER_7;
+    }
+
+        function getPriceProvider8() internal view returns (address) {
+        return _PRICE_PROVIDER_8;
+    }
+
+        function getPriceProvider9() internal view returns (address) {
+        return _PRICE_PROVIDER_9;
+    }
+
+        function getPriceProvider10() internal view returns (address) {
+        return _PRICE_PROVIDER_10;
+    }
+
+        function getPriceProvider11() internal view returns (address) {
+        return _PRICE_PROVIDER_11;
+    }
+
+        function getPriceProvider12() internal view returns (address) {
+        return _PRICE_PROVIDER_12;
+    }
+
+        function getPriceProvider13() internal view returns (address) {
+        return _PRICE_PROVIDER_13;
+    }
+
+        function getPriceProvider14() internal view returns (address) {
+        return _PRICE_PROVIDER_14;
+    }
+
+        function getPriceProvider15() internal view returns (address) {
+        return _PRICE_PROVIDER_15;
+    }
+
+        function getPriceProvider16() internal view returns (address) {
+        return _PRICE_PROVIDER_16;
+    }
+
+        function getPriceProvider17() internal view returns (address) {
+        return _PRICE_PROVIDER_17;
+    }
+
+        function getPriceProvider18() internal view returns (address) {
+        return _PRICE_PROVIDER_18;
+    }
+
+        function getPriceProvider19() internal view returns (address) {
+        return _PRICE_PROVIDER_19;
+    }
+
+        function getPriceProvider20() internal view returns (address) {
+        return _PRICE_PROVIDER_20;
+    }
+
+        function getPriceProvider21() internal view returns (address) {
+        return _PRICE_PROVIDER_21;
+    }
+
+        function getPriceProvider22() internal view returns (address) {
+        return _PRICE_PROVIDER_22;
+    }
+
+        function getPriceProvider23() internal view returns (address) {
+        return _PRICE_PROVIDER_23;
+    }
+
     function getPoolTokens() internal view returns (IERC20Metadata[1] memory) {
         return [
       IERC20Metadata(0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7)
@@ -111,7 +195,7 @@ library SmartLoanLib {
 
     function getPools() internal view returns (ERC20Pool[1] memory) {
         return [
-      ERC20Pool(0xF9c0bF1CFAAB883ADb95fed4cfD60133BffaB18a)
+      ERC20Pool(0x202CCe504e04bEd6fC0521238dDf04Bc9E8E15aB)
         ];
     }
 
@@ -133,7 +217,7 @@ library SmartLoanLib {
 
     //TODO: remember that it will be updated with a deployment script...
     function getPoolAddress(bytes32 poolToken) internal view returns (address) {
-    if (poolToken == bytes32("AVAX")) return 0xF9c0bF1CFAAB883ADb95fed4cfD60133BffaB18a;
+    if (poolToken == bytes32("AVAX")) return 0x202CCe504e04bEd6fC0521238dDf04Bc9E8E15aB;
 
         return address(0);
     }

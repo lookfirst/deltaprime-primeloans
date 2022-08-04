@@ -160,6 +160,10 @@ export async function liquidateLoan(loanAddress) {
         .wrapLite(flashLoan)
         .usingPriceFeed("redstone-avalanche-prod"); // redstone-avalanche
 
+        console.log(poolTokens);
+
+    console.log(await liquidateFacet.isSolvent());
+
     const flashLoanTx = await flashLoan.executeFlashloan(
     {
         assets: poolTokens, 
