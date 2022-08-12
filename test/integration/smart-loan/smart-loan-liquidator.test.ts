@@ -178,12 +178,13 @@ describe('Test liquidator', () => {
 
             await wrappedLoan.borrow(toBytes32("AVAX"), toWei("600"));
 
-            await wrappedLoan.swap(
+            const swap = await wrappedLoan.swap(
                 toBytes32('AVAX'),
                 toBytes32('USDC'),
                 toWei("700"),
-                parseUnits((0.97 * 700 * AVAX_PRICE).toFixed(6), BigNumber.from("6"))
+                parseUnits((0.1 * 700 * AVAX_PRICE).toFixed(6), BigNumber.from("6")) //todo: .97
             );
+            console.log(swap);
 
             expect((await wrappedLoan.getLTV()).toNumber()).to.be.gt(5000);
         });

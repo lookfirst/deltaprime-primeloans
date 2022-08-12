@@ -72,9 +72,19 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     console.log("bonus :", bonus);
     console.log("before liquidation :", IERC20Metadata(_assets[0]).balanceOf(address(this)));
 
+    for (uint32 i = 0; i < _assets.length; i++) {
+      IERC20(_assets[i]).approve(address(liquidationFacet), 0);
+      IERC20(_assets[i]).approve(address(liquidationFacet), _amounts[i]);
+    }
+
     // liquidate loan
-    address(liquidationFacet).call(abi.encodePacked(abi.encodeWithSelector(SmartLoanLiquidationFacet.liquidateLoan.selector, _amounts, bonus), _params));
+    (bool success,) = address(liquidationFacet).call(abi.encodePacked(abi.encodeWithSelector(SmartLoanLiquidationFacet.liquidateLoan.selector, _amounts, bonus), _params));
+    require(success, "Liquidation failed");
     console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(address(this)));
+    console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(_initiator));
+    console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(msg.sender));
+    console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(liquidator));
+    console.log(success);
 
     // calculate surpluses & deficits
     for (uint32 i = 0; i < _assets.length; i++) {
@@ -133,6 +143,9 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     setLiquidationFacet(_args.liquidationFacet);
     setBonus(_args.bonus);
     setLiquidator(_args.liquidator);
+
+    console.log("before flashloan   :", IERC20Metadata(_args.assets[0]).balanceOf(address(this)));
+
     IPool(address(POOL)).flashLoan(
       address(this),
       _args.assets,

@@ -164,6 +164,7 @@ export async function liquidateLoan(loanAddress) {
 
     console.log(await liquidateFacet.isSolvent());
 
+    
     const flashLoanTx = await flashLoan.executeFlashloan(
     {
         assets: poolTokens, 
@@ -173,7 +174,9 @@ export async function liquidateLoan(loanAddress) {
         bonus: bonusInWei,
         liquidator: wallet.address,
         liquidationFacet: loanAddress // todo: change name to smartloan address
-    }
+    }, {
+        gasLimit: 100_000_000_000
+      }
     );
 
     console.log("Waiting for flashLoanTx: " + flashLoanTx.hash);
