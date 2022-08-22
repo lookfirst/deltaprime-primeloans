@@ -19,7 +19,7 @@
       </div>
 
       <div class="table__cell">
-        {{ apy | percent }}
+        {{ protocol.name === 'AVAX' ? apy : 0.059 | percent }}
       </div>
 
       <div class="table__cell">
@@ -31,8 +31,8 @@
 
       <div class="table__cell">
         <div class="double-value">
-          <div class="double-value__pieces">0.78</div>
-          <div class="double-value__usd">{{ 3.35 | usd }}</div>
+          <div class="double-value__pieces">0</div>
+          <div class="double-value__usd">{{ 0 | usd }}</div>
         </div>
       </div>
 

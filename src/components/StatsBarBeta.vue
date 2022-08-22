@@ -3,14 +3,14 @@
     <div class="stats-bar">
       <stats-bar-element-beta :label="'Total value'" :value="totalValue | usd">
         <div class="total-value-extra">
-          Today: <colored-value-beta :value="23.45" :formatting="'usd'"></colored-value-beta>
+          Today: <colored-value-beta :value="3.45" :formatting="'usd'"></colored-value-beta>
         </div>
       </stats-bar-element-beta>
-      <stats-bar-element-beta v-if="ltv" :label="'LTV'" :value="ltv | percent">
+      <stats-bar-element-beta :label="'LTV'" :value="ltv | percent">
         <bar-gauge-beta :min="0" :max="5" :value="ltv"></bar-gauge-beta>
       </stats-bar-element-beta>
 
-      <vue-loaders-ball-beat v-if="!ltv" color="#A6A3FF" scale="1"></vue-loaders-ball-beat>
+<!--      <vue-loaders-ball-beat v-if="!ltv" color="#A6A3FF" scale="1"></vue-loaders-ball-beat>-->
 
 
       <stats-bar-element-beta :label="'Profit'" :value="12.56 | usd">

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-// Last deployed from commit: c5c938a0524b45376dd482cd5c8fb83fa94c2fcc;
+// Last deployed from commit: 5e8f5dec33212cea26a543bc9e4611925b8e412a;
 pragma solidity ^0.8.4;
 
 import "@pangolindex/exchange-contracts/contracts/pangolin-periphery/interfaces/IPangolinRouter.sol";

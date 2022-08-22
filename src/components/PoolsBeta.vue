@@ -84,14 +84,14 @@ export default {
           asset: config.ASSETS_CONFIG['AVAX'],
           deposit: fromWei(this.pool.deposit),
           apy: fromWei(this.pool.apy),
-          interest: 0.0112,
+          interest: 0,
           tvl: fromWei(this.pool.tvl)
         },
         {
           asset: config.ASSETS_CONFIG['USDC'],
           deposit: fromWei(this.usdcPool.deposit),
           apy: fromWei(this.usdcPool.apy),
-          interest: 0.0271,
+          interest: 0,
           tvl: fromWei(this.usdcPool.tvl)
         },
 

@@ -171,6 +171,8 @@ export default {
       const status = await handleCall(loan.getFullLoanStatus);
 
       commit('setTotalValue', fromWei(status[0]));
+      console.log('updateding')
+      console.log('setDebt: ', fromWei(status[1]))
       commit('setDebt', fromWei(status[1]));
       commit('setLtv', status[2] / 1000);
     },

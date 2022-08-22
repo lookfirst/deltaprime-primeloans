@@ -108,10 +108,22 @@ export default {
         AVAX: {
           protocols: {
             YAK_YIELD: {
+              name: 'AVAX',
               balance: stakedAvax,
               receiptTokenBalance: stakedYrt,
               receiptTokenBalanceWei: stakedYrtWei,
               receiptToAvaxConversionRate: yrtToAvaxConversionRate
+            }
+          }
+        },
+        SAVAX: {
+          protocols: {
+            BENQI: {
+              name: 'SAVAX',
+              balance: 0,
+              receiptTokenBalance: 0,
+              receiptTokenBalanceWei: 0,
+              receiptToAvaxConversionRate: 0
             }
           }
         }

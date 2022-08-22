@@ -1,7 +1,7 @@
 <template>
   <div class="ltv-wrapper" :class="{ 'close-to-insolvent': closeToInsolvent, 'insolvent': insolvent }">
     <div class="ltv-value">
-      <LoadedValue :value="ltv | percent"></LoadedValue>
+      <LoadedValue :value="ltv != null ? ltv : 0 | percent"></LoadedValue>
     </div>
     <div class="bar-wrapper">
       <div class="ltv-info">{{info}}</div>

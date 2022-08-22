@@ -180,6 +180,17 @@ export default {
           stakingOptions: {
             AVAX: config.ASSETS_CONFIG.AVAX,
           }
+        },
+        'BENQI': {
+          symbol: 'BENQI',
+          name: 'Benqi',
+          totalStaked: 0,
+          balance: 0,
+          maxApy: null,
+          showStakingOptions: false,
+          stakingOptions: {
+            SAVAX: config.ASSETS_CONFIG.SAVAX,
+          }
         }
       },
     };

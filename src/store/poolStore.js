@@ -132,27 +132,25 @@ export default {
 
       const usdcTokenContract = rootState.fundsStore.usdcTokenContract;
 
-      await usdcTokenContract.connect(provider.getSigner()).approve(state.usdcPoolContract.address, toWei(String(amount)));
-      await state.poolContract.connect(provider.getSigner()).deposit(toWei(String(amount)));
+      await usdcTokenContract.connect(provider.getSigner()).approve(state.usdcPoolContract.address,
+          parseUnits(String(amount), config.ASSETS_CONFIG['USDC'].decimals)
+          );
+      await state.usdcPoolContract.connect(provider.getSigner()).deposit(
+          parseUnits(String(amount), config.ASSETS_CONFIG['USDC'].decimals)
+      );
 
     },
 
     async withdraw({state, rootState, commit, dispatch}, {amount}) {
       const provider = rootState.network.provider;
 
-      const wavaxTokenContract = rootState.fundsStore.wavaxTokenContract;
-
-      await wavaxTokenContract.connect(provider.getSigner()).approve(state.poolContract.address, toWei(String(amount)));
-      await state.usdcPoolContract.connect(provider.getSigner()).withdraw(toWei(String(amount)));
+      await state.poolContract.connect(provider.getSigner()).withdraw(toWei(String(amount)));
     },
 
     async withdrawUsdc({state, rootState, commit, dispatch}, {amount}) {
       const provider = rootState.network.provider;
 
-      const usdcTokenContract = rootState.fundsStore.usdcTokenContract;
-
-      await usdcTokenContract.connect(provider.getSigner()).approve(state.usdcPoolContract.address, toWei(String(amount)));
-      await state.usdcPoolContract.connect(provider.getSigner()).withdraw(toWei(String(amount)));
+      await state.usdcPoolContract.connect(provider.getSigner()).withdraw(parseUnits(String(amount), config.ASSETS_CONFIG['USDC'].decimals));
     },
   },
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-// Last deployed from commit: f97d683e94fbb14f55819d6782c1f6a20998b10e;
+// Last deployed from commit: 5e8f5dec33212cea26a543bc9e4611925b8e412a;
 pragma solidity ^0.8.4;
 
 import "redstone-evm-connector/lib/contracts/commons/ProxyConnector.sol";

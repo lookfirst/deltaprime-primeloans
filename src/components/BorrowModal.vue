@@ -114,6 +114,7 @@ export default {
 
     calculateLTVAfterTransaction() {
       if (this.value) {
+        console.log('totalCollateral: ', this.totalCollateral )
         const loan = this.totalCollateral * this.ltv;
         this.ltvAfterTransaction = (loan + (this.value * this.asset.price)) / this.totalCollateral;
       } else {

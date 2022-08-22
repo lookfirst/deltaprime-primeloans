@@ -21,7 +21,7 @@
 
         <div class="header__cell">
           <div class="header__cell__label">Max APY:</div>
-          <div class="header__cell__value">{{ maxStakingApy | percent }}</div>
+          <div class="header__cell__value">{{ asset.name === 'SAVAX' ? 0.059 : maxStakingApy | percent }}</div>
         </div>
 
         <div class="header__cell">

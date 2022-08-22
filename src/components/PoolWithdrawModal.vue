@@ -45,7 +45,7 @@
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Deposit'" v-on:click="submit()"></Button>
+        <Button :label="'Withdraw'" v-on:click="submit()"></Button>
       </div>
     </Modal>
   </div>

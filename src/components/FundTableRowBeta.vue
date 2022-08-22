@@ -29,7 +29,11 @@
           <div class="double-value__pieces">{{ avaxDebt | smartRound }}</div>
           <div class="double-value__usd">{{ avaxDebt * asset.price | usd }}</div>
         </template>
-        <template v-if="asset.symbol !== 'AVAX'">
+        <template v-if="asset.symbol === 'USDC'">
+          <div class="double-value__pieces">{{ usdcDebt | smartRound }}</div>
+          <div class="double-value__usd">{{ usdcDebt * asset.price | usd }}</div>
+        </template>
+        <template v-if="asset.symbol !== 'AVAX' && asset.symbol !== 'USDC'">
           <div class="no-value-dash"></div>
         </template>
       </div>
@@ -126,7 +130,7 @@ export default {
   computed: {
     ...mapState('pool', ['borrowingRate']),
     ...mapState('loan', ['debt']),
-    ...mapState('fundsStore', ['smartLoanContract', 'avaxDebt', 'ltv', 'avaxDebt']),
+    ...mapState('fundsStore', ['smartLoanContract', 'avaxDebt', 'ltv', 'avaxDebt', 'usdcDebt']),
     ...mapState('poolStore', ['pool', 'usdcPool']),
 
     loanAPY() {
@@ -156,8 +160,8 @@ export default {
             {
               key: 'BORROW',
               name: 'Borrow',
-              disabled: !this.hasSmartLoanContract
-            }
+              disabled: !this.hasSmartLoanContract || (this.asset.symbol !== 'USDC' && this.asset.symbol !== 'AVAX')
+    }
           ]
         },
         {
@@ -241,7 +245,11 @@ export default {
       const modalInstance = this.openModal(BorrowModal);
       modalInstance.asset = this.asset;
       modalInstance.ltv = this.ltv;
-      modalInstance.totalCollateral = 101;
+      console.log(this.debt)
+      console.log(this.ltv)
+
+      modalInstance.totalCollateral = 1000000;
+      console.log(modalInstance.totalCollateral)
       modalInstance.poolTVL = 11245;
       modalInstance.loanAPY = this.loanAPY;
       modalInstance.maxLTV = 4.5;
@@ -272,7 +280,7 @@ export default {
       const modalInstance = this.openModal(AddFromWalletModal);
       modalInstance.asset = this.asset;
       modalInstance.ltv = this.ltv;
-      modalInstance.totalCollateral = 101;
+      modalInstance.totalCollateral = 1000000;
       modalInstance.$on('ADD_FROM_WALLET', value => {
         if (this.smartLoanContract) {
           if (this.smartLoanContract.address === NULL_ADDRESS) {
@@ -291,7 +299,7 @@ export default {
       const modalInstance = this.openModal(WithdrawModal);
       modalInstance.asset = this.asset;
       modalInstance.ltv = this.ltv;
-      modalInstance.totalCollateral = 900;
+      modalInstance.totalCollateral = 1000000;
       modalInstance.$on('WITHDRAW', value => {
         const withdrawRequest = {
           asset: this.asset.symbol,
@@ -307,7 +315,7 @@ export default {
       const modalInstance = this.openModal(RepayModal);
       modalInstance.asset = this.asset;
       modalInstance.ltv = this.ltv;
-      modalInstance.totalCollateral = 101;
+      modalInstance.totalCollateral = 1000000;
       modalInstance.$on('REPAY', value => {
         const repayRequest = {
           asset: this.asset.symbol,
