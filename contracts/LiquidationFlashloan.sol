@@ -78,36 +78,59 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     }
 
     // liquidate loan
-    (bool success,) = address(liquidationFacet).call(abi.encodePacked(abi.encodeWithSelector(SmartLoanLiquidationFacet.liquidateLoan.selector, _amounts, bonus), _params));
-    require(success, "Liquidation failed");
-    console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(address(this)));
-    console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(_initiator));
-    console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(msg.sender));
-    console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(liquidator));
-    console.log(success);
+    {
+      (bool success,) = address(liquidationFacet).call(abi.encodePacked(abi.encodeWithSelector(SmartLoanLiquidationFacet.liquidateLoan.selector, _amounts, bonus), _params));
+      require(success, "Liquidation failed");
+      console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(address(this)));
+      console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(_initiator));
+      console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(msg.sender));
+      console.log("after liquidation  :", IERC20Metadata(_assets[0]).balanceOf(liquidator));
+      console.log(success);
+    }
 
+
+    address[10] memory supportedTokens = [
+      0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7,
+      0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E,
+      0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB,
+      0x50b7545627a5162F82A992c33b87aDc75187B218,
+      0xc7198437980c041c805A1EDcbA50c1Ce5db95118,
+      0x60781C2586D68229fde47564546784ab3fACA982,
+      0xd1c3f94DE7e5B45fa4eDBBA472491a9f4B166FC4,
+      0x5947BB275c521040051D82396192181b413227A3,
+      0x59414b3089ce2AF0010e7523Dea7E2b35d776ec7,
+      0x8729438EB15e2C8B576fCc6AeCdA6A148776C0F5
+    ];
+
+
+    console.log('calculate surpluses & deficits');
     // calculate surpluses & deficits
-    for (uint32 i = 0; i < _assets.length; i++) {
-      int256 amount = int256(
-        IERC20Metadata(_assets[i]).balanceOf(address(this))
-      ) -
-        int256(_amounts[i]) -
-        int256(_premiums[i]);
-      console.log("amounts :", _amounts[i]);
-      console.log("amounts + premiums :", _amounts[i] + _premiums[i]);
-      if (amount > 0) {
-        assetSurplus.push(AssetAmount(_assets[i], uint256(amount)));
-        console.log("surplus: ", assetSurplus[i].amount);
-      } else if (amount < 0) {
-        assetDeficit.push(AssetAmount(_assets[i], uint256(amount * -1)));
-        console.log("deficit: ", assetDeficit[i].amount);
+    for (uint32 i = 0; i < supportedTokens.length; i++) {
+      int256 index = findIndex(supportedTokens[i], _assets);
+
+      if (index != -1) {
+        int256 amount = int256(IERC20Metadata(_assets[uint256(index)]).balanceOf(address(this))) - int256(_amounts[uint256(index)]) - int256(_premiums[uint256(index)]);
+        console.log("amounts :", _amounts[uint256(index)]);
+        console.log("amounts + premiums :", _amounts[uint256(index)] + _premiums[uint256(index)]);
+
+        if (amount > 0) {
+          assetSurplus.push(AssetAmount(supportedTokens[uint256(index)], uint256(amount)));
+          console.log("asset: ", assetSurplus[uint256(index)].asset);
+          console.log("surplus: ", assetSurplus[uint256(index)].amount);
+        } else if (amount < 0) {
+          assetDeficit.push(AssetAmount(supportedTokens[uint256(index)], uint256(amount * -1)));
+          console.log("asset: ", assetDeficit[uint256(index)].asset);
+          console.log("deficit: ", assetDeficit[uint256(index)].amount);
+        }
+      } else if (IERC20Metadata(supportedTokens[i]).balanceOf(address(this)) > 0) {
+        assetSurplus.push(AssetAmount(supportedTokens[i], uint256(IERC20Metadata(supportedTokens[i]).balanceOf(address(this)))));
       }
     }
 
     // swap to negate deficits
     for (uint32 i = 0; i < assetDeficit.length; i++) {
       for (uint32 j = 0; j < assetSurplus.length; j++) {
-        if(swapToNegateDeficits(assetDeficit[i], assetSurplus[j])){
+        if (swapToNegateDeficits(assetDeficit[i], assetSurplus[j])) {
           break;
         }
       }
@@ -124,14 +147,15 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
 
     // approves
     for (uint32 i = 0; i < _assets.length; i++) {
-      console.log("balance of: ", IERC20(_assets[i]).balanceOf(address(this)));
       console.log("needed    : ", _amounts[i] + _premiums[i]);
       console.log("amount: ", _amounts[i], ", premium: ", _premiums[i]);
       IERC20(_assets[i]).approve(address(POOL), 0);
       IERC20(_assets[i]).approve(address(POOL), _amounts[i] + _premiums[i]);
     }
 
-    console.log('finish');
+    //empty arrays
+    delete assetSurplus;
+    delete assetDeficit;
 
     // success
     return true;
@@ -157,7 +181,8 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     );
   }
 
-  function swapToNegateDeficits(AssetAmount memory _deficit, AssetAmount memory _surplus) private returns (bool shouldBreak){
+  //argument storage, bo przechowujemy w tablicy storage
+  function swapToNegateDeficits(AssetAmount storage _deficit, AssetAmount storage _surplus) private returns (bool shouldBreak){
         uint256[] memory amounts;
         uint256 soldTokenAmountNeeded = pangolinExchange
           .getEstimatedTokensForTokens(
@@ -167,6 +192,9 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
           );
           
         if (soldTokenAmountNeeded > _surplus.amount) {
+          address(_surplus.asset).safeApprove(address(pangolinRouter), 0);
+          address(_surplus.asset).safeApprove(address(pangolinRouter), _surplus.amount);
+
           amounts = pangolinRouter.swapExactTokensForTokens(
             _surplus.amount,
             (soldTokenAmountNeeded * _deficit.amount) /
@@ -177,6 +205,9 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
           );
           return false;
         } else {
+          address(_surplus.asset).safeApprove(address(pangolinRouter), 0);
+          address(_surplus.asset).safeApprove(address(pangolinRouter), soldTokenAmountNeeded);
+
           amounts = pangolinRouter.swapTokensForExactTokens(
             _deficit.amount,
             soldTokenAmountNeeded,
@@ -212,5 +243,17 @@ contract LiquidationFlashloan is FlashLoanReceiverBase, OwnableUpgradeable {
     assembly {
       value := mload(add(_bytes, 0x20))
     }
+  }
+
+  //TODO: pretty inefficient, find better way
+  function findIndex(address addr, address[] memory array) internal view returns (int256){
+    int256 index = -1;
+    for (uint256 i; i < array.length; i++) {
+      if (array[i] == addr) {
+        index = int256(i);
+      }
+    }
+
+    return index;
   }
 }

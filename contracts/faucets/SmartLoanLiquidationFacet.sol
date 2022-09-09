@@ -148,16 +148,10 @@ contract SmartLoanLiquidationFacet is PriceAware, ReentrancyGuard {
     * @param config configuration for liquidation
     **/
     function liquidate(LiquidationConfig memory config) internal {
-        console.log(0);
         SmartLoanLib.setLiquidationInProgress(true);
-        console.log('00');
 
         bytes32[] memory assets = SmartLoanLib.getExchange().getAllAssets();
-        console.log('01');
-        // console.log(assets[0]);
         uint256[] memory prices = getPricesFromMsg(assets);
-        console.log('02');
-        console.log(11111111111);
 
         {
             // TODO: Potentially re-create getTotalValue() & getDebt() methods in this facet as well
@@ -169,19 +163,15 @@ contract SmartLoanLiquidationFacet is PriceAware, ReentrancyGuard {
             require(initialDebt < initialTotal || config.allowUnprofitableLiquidation, "Trying to liquidate bankrupt loan");
         }
 
-        console.log(222222222);
         //healing means bringing a bankrupt loan to a state when debt is smaller than total value again
         bool healingLoan = config.allowUnprofitableLiquidation && LTVLib.calculateDebt(prices) > LTVLib.calculateTotalValue(prices);
 
         uint256 suppliedInUSD;
         uint256 repaidInUSD;
 
-        console.log(1);
-
         for (uint256 i; i < SmartLoanLib.getPoolTokens().length; i++) {
             uint256 poolAssetIndex = SmartLoanLib.getPoolsAssetsIndices()[i];
             IERC20Metadata token = SmartLoanLib.getPoolTokens()[i];
-            console.log(2);
 
             uint256 balance = token.balanceOf(address(this));
             uint256 needed;
@@ -193,36 +183,24 @@ contract SmartLoanLiquidationFacet is PriceAware, ReentrancyGuard {
             }
 
             if (needed > 0) {
-                console.log(3);
-                console.log('-----');
-                console.log(needed);
-                console.log(token.allowance(msg.sender, address(this)));
                 require(needed <= token.allowance(msg.sender, address(this)), "Not enough allowance for the token");
-                console.log(31);
 
                 address(token).safeTransferFrom(msg.sender, address(this), needed);
-                console.log(32);
                 suppliedInUSD += needed * prices[poolAssetIndex] * 10**10 / 10 ** token.decimals();
             }
 
-            console.log(4);
             ERC20Pool pool = SmartLoanLib.getPools()[i];
 
-            console.log(5);
             address(token).safeApprove(address(pool), 0);
             address(token).safeApprove(address(pool), config.amountsToRepay[i]);
-            console.log(6);
 
             repaidInUSD += config.amountsToRepay[i] * prices[poolAssetIndex] * 10**10 / 10 ** token.decimals();
 
             pool.repay(config.amountsToRepay[i]);
-            console.log(7);
         }
 
-            console.log(8);
         uint256 total = LTVLib.calculateTotalValue(prices);
         uint256 bonus;
-        console.log(333333333);
 
         //after healing bankrupt loan (debt > total value), no tokens are returned to liquidator
         if (!healingLoan) {
@@ -245,10 +223,8 @@ contract SmartLoanLiquidationFacet is PriceAware, ReentrancyGuard {
                 uint256 balance = token.balanceOf(address(this));
 
                 address(token).safeTransfer(msg.sender, balance * partToReturn / 10**18);
-                console.log(msg.sender);
             }
         }
-        console.log(44444444);
 
         uint256 LTV = LTVLib.calculateLTV(prices);
 
@@ -258,11 +234,8 @@ contract SmartLoanLiquidationFacet is PriceAware, ReentrancyGuard {
             require(LTV >= SmartLoanLib.getMinSelloutLtv(), "This operation would result in a loan with LTV lower than Minimal Sellout LTV which would put loan's owner in a risk of an unnecessarily high loss");
         }
 
-        console.log(LTV);
         require(LTV < SmartLoanLib.getMaxLtv(), "This operation would not result in bringing the loan back to a solvent state");
         SmartLoanLib.setLiquidationInProgress(false);
-        console.log(9);
-        console.log('bonus : ', bonus);
     }
 
     /**

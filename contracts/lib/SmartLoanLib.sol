@@ -8,7 +8,6 @@ import "../interfaces/IYieldYakRouter.sol";
 import {LibDiamond} from "../lib/LibDiamond.sol";
 import "../mock/WAVAX.sol";
 import "../ERC20Pool.sol";
-import "hardhat/console.sol";
 
 library SmartLoanLib {
 

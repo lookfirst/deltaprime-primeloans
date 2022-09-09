@@ -208,7 +208,7 @@ describe('Test liquidator', () => {
         });
 
         it("liquidate loan", async () => {
-            await liquidateLoan(wrappedLoan.address);
+            await liquidateLoan(wrappedLoan.address, exchange.address);
 
             expect(await wrappedLoan.isSolvent()).to.be.true;
         });

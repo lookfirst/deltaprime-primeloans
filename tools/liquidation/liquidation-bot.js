@@ -5,7 +5,7 @@ import LOAN_FACTORY from '../../deployments/mainnet/SmartLoansFactory.json'
 import LOAN_LOGIC from '../../artifacts/contracts/faucets/SmartLoanLogicFacet.sol/SmartLoanLogicFacet.json'
 import LOAN_LIQUIDATION from '../../artifacts/contracts/faucets/SmartLoanLiquidationFacet.sol/SmartLoanLiquidationFacet.json'
 import addresses from '../../common/token_addresses.json';
-import {toBytes32, fromBytes32, toSupply} from "../../test/_helpers";
+import {fromBytes32, toSupply} from "../../test/_helpers";
 
 const args = require('yargs').argv;
 const https = require('https');
@@ -35,8 +35,6 @@ const RPC_URL = getUrlForNetwork(network);
 let provider = new ethers.providers.JsonRpcProvider(RPC_URL)
 let wallet = (new ethers.Wallet(PRIVATE_KEY)).connect(provider);
 const factory = new ethers.Contract(LOAN_FACTORYTUP.address, LOAN_FACTORY.abi, wallet);
-const exchange = new ethers.Contract(PANGOLIN_EXCHANGETUP.address, PANGOLIN_EXCHANGE.abi, wallet);
-
 
 
 async function wrapLoanStatus(loanAddress) {
@@ -84,12 +82,14 @@ async function getInsolventLoans() {
     return insolventLoans
 }
 
-export async function liquidateLoan(loanAddress) {
+export async function liquidateLoan(loanAddress, exchangeAddress = PANGOLIN_EXCHANGETUP.address) {
     let loan = wrapLogicFacet(loanAddress);
     let liquidateFacet = wrapLiquidationFacet(loanAddress);
     let maxBonus = (await loan.getMaxLiquidationBonus()).toNumber() / 1000;
     let prices = (await loan.getAllAssetsPrices()).map(el => el.toNumber() / 10**8);
     let [tv, debt] = await loan.getFullLoanStatus();
+
+    const exchange = new ethers.Contract(exchangeAddress, PANGOLIN_EXCHANGE.abi, wallet);
 
     let assetsSymbols = await exchange.getAllAssets();
     let indices = await loan.getPoolsAssetsIndices();
@@ -155,7 +155,7 @@ export async function liquidateLoan(loanAddress) {
     }
 
     const bonusInWei = (bonus * 1000).toFixed(0);
-    let flashLoan = await deployLiquidationFlashloan(loanAddress); 
+    let flashLoan = await deployLiquidationFlashloan(loanAddress, exchangeAddress);
     flashLoan = WrapperBuilder
         .wrapLite(flashLoan)
         .usingPriceFeed("redstone-avalanche-prod"); // redstone-avalanche
