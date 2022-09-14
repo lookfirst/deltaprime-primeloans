@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-// Last deployed from commit: a6bce6b3ffb1f37090a43c55acaf3f7c1749dbf3;
+// SPDX-License-Identifier: BUSL-1.1
+// Last deployed from commit: 48991ca286a107aedf142ae9fd21b421b08f5025;
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -14,88 +14,95 @@ import "./interfaces/IRatesCalculator.sol";
  * which second piece is considered) and MAX_RATE (value at pool utilisation of 1).
  **/
 contract VariableUtilisationRatesCalculator is IRatesCalculator, Ownable {
-  uint256 public constant SLOPE_1 = 0.12e18;
-  uint256 public constant OFFSET = 0.03e18;
-  // BREAKPOINT must be lower than 1e18
-  uint256 public constant BREAKPOINT = 0.8e18;
-  uint256 public constant MAX_RATE = 0.75e18;
+    uint256 public constant SLOPE_1 = 0;
+    uint256 public constant OFFSET_1 = 0.03e18;
 
-  // calculated off-chain for gas efficiency with following formula:
-  // (MAX_RATE - OFFSET - SLOPE_1 * BREAKPOINT) / (1 - BREAKPOINT)
-  uint256 public constant SLOPE_2 = 3.12e18;
+    uint256 public constant BREAKPOINT_1 = 0.6e18;
 
-  //accuracy of 1000
-  uint256 public depositRateFactor = 995;
+    uint256 public constant SLOPE_2 = 0.45e18;
+    //negative, hence minus in calculations
+    uint256 public constant OFFSET_2 = 0.24e18;
 
-  /* ========== VIEW FUNCTIONS ========== */
+    uint256 public constant BREAKPOINT_2 = 0.8e18;
 
-  /**
-   * Returns the pool utilisation, which is a ratio between loans and deposits
-   * utilisation = value_of_loans / value_of_deposits
-   * @dev _totalLoans total value of loans
-   * @dev _totalDeposits total value of deposits
-   **/
-  function getPoolUtilisation(uint256 _totalLoans, uint256 _totalDeposits) public pure returns (uint256) {
-    if (_totalDeposits == 0) return 0;
+    uint256 public constant SLOPE_3 = 3.15e18;
+    //negative, hence minus in calculations
+    uint256 public constant OFFSET_3 = 2.4e18;
 
-    return (_totalLoans * 1e18) / _totalDeposits;
-  }
+    // BREAKPOINT must be lower than 1e18
+    uint256 public constant MAX_RATE = 0.75e18;
 
-  /**
-   * Returns the current deposit rate
-   * The value is based on the current borrowing rate and satisfies the invariant:
-   * value_of_loans * borrowing_rate = value_of_deposits * deposit_rate
-   * @dev _totalLoans total value of loans
-   * @dev _totalDeposits total value of deposits
-   **/
-  function calculateDepositRate(uint256 _totalLoans, uint256 _totalDeposits) external view override returns (uint256) {
-    if (_totalDeposits == 0) return 0;
+    //residual spread to account for arithmetic inaccuracies in calculation of deposit rate. Does not result in any meaningful
+    //profit generation
+    uint256 public spread = 1e12;
 
-    if (_totalLoans >= _totalDeposits) {
-      return MAX_RATE * depositRateFactor / 1000;
-    } else {
-      uint256 rate = this.calculateBorrowingRate(_totalLoans, _totalDeposits) * depositRateFactor * _totalLoans / (_totalDeposits * 1000);
-        return rate;
+    /* ========== VIEW FUNCTIONS ========== */
+
+    /**
+     * Returns the pool utilisation, which is a ratio between loans and deposits
+     * utilisation = value_of_loans / value_of_deposits
+     * @dev _totalLoans total value of loans
+     * @dev _totalDeposits total value of deposits
+     **/
+    function getPoolUtilisation(uint256 _totalLoans, uint256 _totalDeposits) public pure returns (uint256) {
+        if (_totalDeposits == 0) return 0;
+
+        return (_totalLoans * 1e18) / _totalDeposits;
     }
-  }
 
-  /**
-   * Returns the current borrowing rate
-   * The value is based on the pool utilisation according to the piecewise linear formula:
-   * 1) for pool utilisation lower than or equal to breakpoint:
-   * borrowing_rate = SLOPE_1 * utilisation + OFFSET
-   * 2) for pool utilisation greater than breakpoint:
-   * borrowing_rate = SLOPE_2 * utilisation + MAX_RATE - SLOPE_2
-   * @dev _totalLoans total value of loans
-   * @dev _totalDeposits total value of deposits
-   **/
-  function calculateBorrowingRate(uint256 totalLoans, uint256 totalDeposits) external pure override returns (uint256) {
-    if (totalDeposits == 0) return OFFSET;
+    /**
+     * Returns the current deposit rate
+     * The value is based on the current borrowing rate and satisfies the invariant:
+     * value_of_loans * borrowing_rate = value_of_deposits * deposit_rate
+     * @dev _totalLoans total value of loans
+     * @dev _totalDeposits total value of deposits
+     **/
+    function calculateDepositRate(uint256 _totalLoans, uint256 _totalDeposits) external view override returns (uint256) {
+        if (_totalDeposits == 0) return 0;
 
-    uint256 poolUtilisation = getPoolUtilisation(totalLoans, totalDeposits);
-
-    if (poolUtilisation >= 1e18) {
-      return MAX_RATE;
-    } else if (poolUtilisation <= BREAKPOINT) {
-      return (poolUtilisation * SLOPE_1) / 1e18 + OFFSET;
-    } else {
-      // full formula derived from piecewise linear function calculation except for SLOPE_2 subtraction (separated for
-      // unsigned integer safety check)
-      uint256 value = (poolUtilisation * SLOPE_2) / 1e18 + MAX_RATE;
-
-      require(value >= SLOPE_2, "Out of range value when calculating the borrowing rate. Consider checking if SLOPE_2 is calculated correctly");
-
-      return value - SLOPE_2;
+        if (_totalLoans >= _totalDeposits) {
+            return MAX_RATE * (1e18 - spread) / 1e18;
+        } else {
+            uint256 rate = this.calculateBorrowingRate(_totalLoans, _totalDeposits) * (1e18 - spread) * _totalLoans / (_totalDeposits * 1e18);
+            return rate;
+        }
     }
-  }
 
-  /* ========== SETTERS ========== */
-  /**
-   * Sets deposit rate factor
-   * This factor is needed to account for arithmetic inaccuracy and keep pool balanced. Should be close to 1000
-   * @dev _newRate total value of loans
-   **/
-  function setDepositRateFactor(uint256 factor) external onlyOwner {
-    depositRateFactor = factor;
-  }
+    /**
+     * Returns the current borrowing rate
+     * The value is based on the pool utilisation according to the piecewise linear formula:
+     * 1) for pool utilisation lower than or equal to breakpoint:
+     * borrowing_rate = SLOPE_1 * utilisation + OFFSET
+     * 2) for pool utilisation greater than breakpoint:
+     * borrowing_rate = SLOPE_2 * utilisation + MAX_RATE - SLOPE_2
+     * @dev _totalLoans total value of loans
+     * @dev _totalDeposits total value of deposits
+     **/
+    function calculateBorrowingRate(uint256 totalLoans, uint256 totalDeposits) external view override returns (uint256) {
+        if (totalDeposits == 0) return OFFSET_1;
+
+        uint256 poolUtilisation = getPoolUtilisation(totalLoans, totalDeposits);
+
+        if (poolUtilisation >= 1e18) {
+            return MAX_RATE;
+        } else if (poolUtilisation <= BREAKPOINT_1) {
+            return (poolUtilisation * SLOPE_1) / 1e18 + OFFSET_1;
+        } else if (poolUtilisation <= BREAKPOINT_2) {
+            return (poolUtilisation * SLOPE_2) / 1e18 - OFFSET_2;
+        } else {
+            // full formula derived from piecewise linear function calculation except for SLOPE_2 subtraction (separated for
+            // unsigned integer safety check)
+            return (poolUtilisation * SLOPE_3) / 1e18 - OFFSET_3;
+        }
+    }
+
+    /* ========== SETTERS ========== */
+    /**
+     * Sets the spread between deposit and borrow rate, number between 0 and 1e18
+     * @param _spread spread defined by user
+     **/
+    function setSpread(uint256 _spread) external onlyOwner {
+        require(_spread < 1e18, "Spread must be smaller than 1e18");
+        spread = _spread;
+    }
 }

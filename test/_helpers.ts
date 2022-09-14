@@ -1,14 +1,40 @@
 import {ethers, network, waffle} from "hardhat";
 import {BigNumber, Contract} from "ethers";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
-import {PangolinExchange} from "../typechain";
-import PangolinExchangeArtifact from '../artifacts/contracts/PangolinExchange.sol/PangolinExchange.json';
+import {
+    CompoundingIndex,
+    MockToken,
+    OpenBorrowersRegistry__factory,
+    Pool,
+    VariableUtilisationRatesCalculator
+} from "../typechain";
+import AVAX_TOKEN_ADDRESSES from '../common/addresses/avax/token_addresses.json';
+import CELO_TOKEN_ADDRESSES from '../common/addresses/celo/token_addresses.json';
+import VariableUtilisationRatesCalculatorArtifact
+    from '../artifacts/contracts/VariableUtilisationRatesCalculator.sol/VariableUtilisationRatesCalculator.json';
+import PoolArtifact from '../artifacts/contracts/Pool.sol/Pool.json';
+import CompoundingIndexArtifact from '../artifacts/contracts/CompoundingIndex.sol/CompoundingIndex.json';
+import MockTokenArtifact from "../artifacts/contracts/mock/MockToken.sol/MockToken.json";
+
 import {execSync} from "child_process";
-import updateSmartLoanLibrary from "../tools/scripts/update-smart-loan-library"
+import updateConstants from "../tools/scripts/update-constants"
 
 const {provider} = waffle;
-
+const {deployFacet} = require('../tools/diamond/deploy-diamond');
 const {deployContract} = waffle;
+
+const erc20ABI = [
+    'function decimals() public view returns (uint8)',
+    'function balanceOf(address _owner) public view returns (uint256 balance)',
+    'function transfer(address _to, uint256 _value) public returns (bool success)',
+    'function approve(address _spender, uint256 _value) public returns (bool success)',
+    'function allowance(address owner, address spender) public view returns (uint256)'
+]
+
+const wavaxAbi = [
+    'function deposit() public payable',
+    ...erc20ABI
+]
 
 export const toWei = ethers.utils.parseUnits;
 export const formatUnits = (val: BigNumber, decimalPlaces: BigNumber) => parseFloat(ethers.utils.formatUnits(val, decimalPlaces));
@@ -20,38 +46,38 @@ export const fromBytes32 = ethers.utils.parseBytes32String;
 export type Second = number;
 
 export const time = {
-  increase: async (duration: Second) => {
-    await network.provider.send("evm_increaseTime", [duration]);
-    await network.provider.send("evm_mine");
-  },
-  duration: {
-    years: (years: number): Second => {
-      return 60 * 60 * 24 * 365 * years; //TODO: leap years..
+    increase: async (duration: Second) => {
+        await network.provider.send("evm_increaseTime", [duration]);
+        await network.provider.send("evm_mine");
     },
-    months: (months: number): Second => {
-      return 60 * 60 * 24 * 30 * months; // ofc. it is simplified..
-    },
-    days: (days: number): Second => {
-      return 60 * 60 * 24 * days;
-    },
-    hours: (hours: number): Second => {
-      return 60 * 60 * hours;
-    },
-    minutes: (minutes: number): Second => {
-      return 60 * minutes;
+    duration: {
+        years: (years: number): Second => {
+            return 60 * 60 * 24 * 365 * years; //TODO: leap years..
+        },
+        months: (months: number): Second => {
+            return 60 * 60 * 24 * 30 * months; // ofc. it is simplified..
+        },
+        days: (days: number): Second => {
+            return 60 * 60 * 24 * days;
+        },
+        hours: (hours: number): Second => {
+            return 60 * 60 * hours;
+        },
+        minutes: (minutes: number): Second => {
+            return 60 * minutes;
+        }
     }
-  }
 }
 
 export const getSelloutRepayAmount = async function (
-  totalValue: number,
-  debt: number,
-  bonus: number,
-  targetLTV: number) {
+    totalValue: number,
+    debt: number,
+    bonus: number,
+    targetLTV: number) {
 
-  targetLTV = targetLTV / 1000;
-  bonus = bonus / 1000;
-  return (targetLTV * (totalValue - debt) - debt) / (targetLTV * bonus - 1) * 1.04;
+    targetLTV = targetLTV / 1000;
+    bonus = bonus / 1000;
+    return (targetLTV * (totalValue - debt) - debt) / (targetLTV * bonus - 1) * 1.04;
 };
 
 export const toRepay = function (
@@ -66,7 +92,7 @@ export const toRepay = function (
             return debt;
         case 'HEAL':
             //bankrupt loan
-            return (debt - targetLTV * (initialTotalValue - debt)) / (1 + targetLTV);
+            return debt;
         default:
             //liquidate
             return ((1 + targetLTV) * debt - targetLTV * initialTotalValue) / (1 - targetLTV * bonus);
@@ -95,62 +121,153 @@ export const calculateBonus = function (
 
 //simple model: we iterate over pools and repay their debts based on how much is left to repay in USD
 export const getRepayAmounts = function (
-    debts: Array<number>,
-    poolAssetsIndices: Array<number>,
+    action: string,
+    debts: any,
     toRepayInUsd: number,
-    mockPrices: Array<{symbol: string, value: number}>
+    mockPrices: any
 ) {
-    let repayAmounts: Array<number> = [];
+    let repayAmounts: any = {};
+
     let leftToRepayInUsd = toRepayInUsd;
-    poolAssetsIndices.forEach(
-        (index, i) => {
-            let availableToRepayInUsd = debts[i] * mockPrices[index].value;
+
+    for (const [asset, debt] of Object.entries(debts)) {
+        if (action === 'HEAL' || action === 'CLOSE') {
+            repayAmounts[asset] = Number(debt) * 1.00001;
+        } else {
+            let availableToRepayInUsd = Number(debt) * mockPrices[asset];
             let repaidToPool = Math.min(availableToRepayInUsd, leftToRepayInUsd);
             leftToRepayInUsd -= repaidToPool;
-            repayAmounts[i] = repaidToPool / mockPrices[index].value;
+            repayAmounts[asset] = repaidToPool / mockPrices[asset];
         }
-    );
+    }
 
     //repayAmounts are measured in appropriate tokens (not USD)
     return repayAmounts;
 }
 
-export const toSupply = function(
-    poolAssetsIndices: Array<number>,
-    balances: Array<number>,
-    repayAmounts: Array<number>
+export const toSupply = function (
+    balances: any,
+    repayAmounts: any
 ) {
     //multiplied by 1.00001 to account for limited accuracy of calculations
-    let toSupply: Array<number> = [];
+    let toSupply: any = {};
 
-    poolAssetsIndices.forEach(
-        (index, i) => {
-            toSupply[i] = 1.00001 * Math.max(repayAmounts[i] - balances[index], 0);
-        }
-    );
+    for (const [asset, amount] of Object.entries(repayAmounts)) {
+        // TODO: Change 1.1 to smth smaller if possible
+        toSupply[asset] = 1.1 * Math.max(Number(amount) - (balances[asset] ?? 0), 0);
+    }
+
     return toSupply;
 }
 
 export const getFixedGasSigners = async function (gasLimit: number) {
-  const signers: SignerWithAddress[] = await ethers.getSigners();
-  signers.forEach(signer => {
-    let orig = signer.sendTransaction;
-    signer.sendTransaction = function (transaction) {
-      transaction.gasLimit = BigNumber.from(gasLimit.toString());
-      return orig.apply(signer, [transaction]);
-    }
-  });
-  return signers;
+    const signers: SignerWithAddress[] = await ethers.getSigners();
+    signers.forEach(signer => {
+        let orig = signer.sendTransaction;
+        signer.sendTransaction = function (transaction) {
+            transaction.gasLimit = BigNumber.from(gasLimit.toString());
+            return orig.apply(signer, [transaction]);
+        }
+    });
+    return signers;
 };
 
-export const deployAndInitPangolinExchangeContract = async function (
+
+export const deployAllFacets = async function (diamondAddress: any, chain = 'AVAX') {
+    await deployFacet(
+        "OwnershipFacet",
+        diamondAddress,
+        [
+            'transferOwnership',
+        ]
+    )
+    await deployFacet(
+        "AssetsOperationsFacet",
+        diamondAddress,
+        [
+            'borrow',
+            'repay',
+            'fund',
+            'withdraw',
+        ],
+        ''
+    )
+    await deployFacet("SolvencyFacet", diamondAddress, [])
+    if (chain == 'AVAX') {
+        await deployFacet("SmartLoanWrappedNativeTokenFacet", diamondAddress, ['depositNativeToken', 'wrapNativeToken', 'unwrapAndWithdraw'])
+        await deployFacet("PangolinDEXFacet", diamondAddress, ['swapPangolin'])
+        await deployFacet("TraderJoeDEXFacet", diamondAddress, ['swapTraderJoe'])
+        await deployFacet("VectorFinanceFacet", diamondAddress, [
+            'vectorStakeUSDC1',
+            'vectorUnstakeUSDC1',
+            'vectorStakeUSDC2',
+            'vectorUnstakeUSDC2',
+            'vectorStakeWAVAX1',
+            'vectorUnstakeWAVAX1',
+            'vectorStakeSAVAX1',
+            'vectorUnstakeSAVAX1'
+        ])
+    }
+    if (chain == 'CELO') {
+        await deployFacet("UbeswapDEXFacet", diamondAddress, ['swapUbeswap'])
+    }
+    await deployFacet(
+        "SmartLoanLiquidationFacet",
+        diamondAddress,
+        [
+            'liquidateLoan',
+            'unsafeLiquidateLoan',
+            'getMaxLiquidationBonus'
+        ]
+    )
+    await deployFacet(
+        "SmartLoanViewFacet",
+        diamondAddress,
+        [
+            'initialize',
+            'getAllAssetsBalances',
+            'getPercentagePrecision',
+            'getAllAssetsPrices',
+            'getBalance',
+            'getSupportedTokensAddresses',
+            'getAllOwnedAssets',
+        ]
+    )
+};
+
+export const extractAssetNameBalances = async function (
+    wrappedLoan: any
+) {
+    let assetsNamesBalances = await wrappedLoan.getAllAssetsBalances();
+    let result: any = {};
+    for (const assetNameBalance of assetsNamesBalances) {
+        result[fromBytes32(assetNameBalance[0])] = assetNameBalance[1];
+    }
+    return result;
+}
+
+export const extractAssetNamePrices = async function (
+    wrappedLoan: any
+) {
+    let assetsNamesPrices = await wrappedLoan.getAllAssetsPrices();
+    let result: any = {};
+    for (const assetNamePrice of assetsNamesPrices) {
+        result[fromBytes32(assetNamePrice[0])] = assetNamePrice[1];
+    }
+    return result;
+}
+
+
+export const deployAndInitExchangeContract = async function (
     owner: SignerWithAddress,
-    pangolinRouterAddress: string,
-    supportedAssets: Asset[]
-  ) {
-  const exchange = await deployContract(owner, PangolinExchangeArtifact) as PangolinExchange;
-  exchange.initialize(pangolinRouterAddress, supportedAssets);
-  return exchange
+    routerAddress: string,
+    supportedAssets: string[],
+    name: string
+) {
+    let exchangeFactory = await ethers.getContractFactory(name);
+    const exchange = (await exchangeFactory.deploy()).connect(owner);
+    await exchange.initialize(routerAddress, supportedAssets);
+    return exchange
 };
 
 export async function calculateStakingTokensAmountBasedOnAvaxValue(yakContract: Contract, avaxAmount: BigNumber) {
@@ -179,22 +296,106 @@ export async function syncTime() {
     }
 }
 
-export async function recompileSmartLoanLib(contractName: string, poolTokenIndices: Array<Number>, poolTokenAddresses: Array<string>,  poolMap: {}, exchangeAddress: string, yieldYakAddress: string, subpath?: string, maxLTV: number=5000, minSelloutLTV: number=4000) {
-    const subPath = subpath ? subpath +'/' : "";
-    const artifactsDirectory = `../artifacts/contracts/${subPath}${contractName}.sol/${contractName}.json`;
-    delete require.cache[require.resolve(artifactsDirectory)]
-    await updateSmartLoanLibrary(poolTokenIndices, poolTokenAddresses, poolMap, exchangeAddress, yieldYakAddress, maxLTV, minSelloutLTV);
+export async function deployAndInitializeLendingPool(owner: any, tokenName: string, tokenAirdropList: any, chain = 'AVAX') {
 
-    execSync(`npx hardhat compile`, { encoding: 'utf-8' });
+    const variableUtilisationRatesCalculator = (await deployContract(owner, VariableUtilisationRatesCalculatorArtifact)) as VariableUtilisationRatesCalculator;
+    let pool = (await deployContract(owner, PoolArtifact)) as Pool;
+    let tokenContract: any;
+    if (chain === 'AVAX') {
+        switch (tokenName) {
+            case 'MCKUSD':
+                //it's a mock implementation of USD token with 18 decimal places
+                tokenContract = (await deployContract(owner, MockTokenArtifact, [tokenAirdropList])) as MockToken;
+                break;
+            case 'AVAX':
+                tokenContract = new ethers.Contract(AVAX_TOKEN_ADDRESSES['AVAX'], wavaxAbi, provider);
+                for (const user of tokenAirdropList) {
+                    await tokenContract.connect(user).deposit({value: toWei("1000")});
+                }
+                break;
+            case 'ETH':
+                tokenContract = new ethers.Contract(AVAX_TOKEN_ADDRESSES['ETH'], erc20ABI, provider);
+                break;
+            case 'USDC':
+                tokenContract = new ethers.Contract(AVAX_TOKEN_ADDRESSES['USDC'], erc20ABI, provider);
+                break;
+        }
+    } else if (chain === 'CELO') {
+        switch (tokenName) {
+            case 'MCKUSD':
+                //it's a mock implementation of USD token with 18 decimal places
+                tokenContract = (await deployContract(owner, MockTokenArtifact, [tokenAirdropList])) as MockToken;
+                break;
+            case 'CELO':
+                tokenContract = new ethers.Contract(CELO_TOKEN_ADDRESSES['CELO'], erc20ABI, provider);
+                break;
+            case 'mcUSD':
+                tokenContract = new ethers.Contract(CELO_TOKEN_ADDRESSES['mcUSD'], erc20ABI, provider);
+                break;
+            case 'ETH':
+                tokenContract = new ethers.Contract(CELO_TOKEN_ADDRESSES['ETH'], erc20ABI, provider);
+                break;
+        }
+    }
+
+    const borrowersRegistry = await (new OpenBorrowersRegistry__factory(owner).deploy());
+    const depositIndex = (await deployContract(owner, CompoundingIndexArtifact, [pool.address])) as CompoundingIndex;
+    const borrowingIndex = (await deployContract(owner, CompoundingIndexArtifact, [pool.address])) as CompoundingIndex;
+    await pool.initialize(
+        variableUtilisationRatesCalculator.address,
+        borrowersRegistry.address,
+        depositIndex.address,
+        borrowingIndex.address,
+        tokenContract!.address
+    );
+    return {'poolContract': pool, 'tokenContract': tokenContract}
+}
+
+export async function recompileConstantsFile(chain: string, contractName: string, exchanges: Array<{ facetPath: string, contractAddress: string }>, tokenManagerAddress: string, redstoneConfigManagerAddress: string, diamondBeaconAddress: string, smartLoansFactoryAddress: string, subpath: string, maxLTV: number = 5000, minSelloutLTV: number = 4000, maxLiquidationBonus: number = 100, nativeAssetSymbol: string = 'AVAX') {
+    const subPath = subpath ? subpath + '/' : "";
+    const artifactsDirectory = `../artifacts/contracts/${subPath}/${chain}/${contractName}.sol/${contractName}.json`;
+    delete require.cache[require.resolve(artifactsDirectory)]
+    await updateConstants(chain, exchanges, tokenManagerAddress, redstoneConfigManagerAddress, diamondBeaconAddress, smartLoansFactoryAddress, maxLTV, minSelloutLTV, maxLiquidationBonus, nativeAssetSymbol);
+    execSync(`npx hardhat compile`, {encoding: 'utf-8'});
     return require(artifactsDirectory);
 }
 
 export class Asset {
-  asset: string;
-  assetAddress: string;
+    asset: string;
+    assetAddress: string;
 
-  constructor(asset: string, assetAddress: string) {
-    this.asset = asset;
-    this.assetAddress = assetAddress;
-  }
+    constructor(asset: string, assetAddress: string) {
+        this.asset = asset;
+        this.assetAddress = assetAddress;
+    }
+}
+
+export class AssetNamePrice {
+    name: string;
+    price: BigNumber;
+
+    constructor(name: string, price: BigNumber) {
+        this.name = name;
+        this.price = price;
+    }
+}
+
+export class AssetNameBalance {
+    name: string;
+    balance: BigNumber;
+
+    constructor(name: string, balance: BigNumber) {
+        this.name = name;
+        this.balance = balance;
+    }
+}
+
+export class PoolAsset {
+    asset: string;
+    poolAddress: string;
+
+    constructor(asset: string, poolAddress: string) {
+        this.asset = asset;
+        this.poolAddress = poolAddress;
+    }
 }

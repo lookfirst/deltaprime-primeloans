@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
 pragma solidity ^0.8.4;
 
@@ -7,9 +7,9 @@ pragma solidity ^0.8.4;
  * Keeps a registry of created trading accounts to verify their borrowing rights
  */
 interface IBorrowersRegistry {
-  function canBorrow(address _account) external view returns (bool);
+    function canBorrow(address _account) external view returns (bool);
 
-  function getLoanForOwner(address _owner) external view returns (address);
+    function getLoanForOwner(address _owner) external view returns (address);
 
-  function getOwnerOfLoan(address _loan) external view returns (address);
+    function getOwnerOfLoan(address _loan) external view returns (address);
 }

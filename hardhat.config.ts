@@ -4,6 +4,7 @@ import '@nomiclabs/hardhat-waffle'
 import "hardhat-watcher";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-contract-sizer";
+import "hardhat-interface-generator";
 require('hardhat-deploy');
 
 const fs = require('fs');
@@ -17,7 +18,7 @@ export default {
       },
       {
         version: "0.8.4",
-      }
+      },
     ]
   },
   defaultNetwork: "hardhat",
@@ -27,7 +28,6 @@ export default {
       gas: 12000000,
       blockGasLimit: 0x1fffffffffffff,
       timeout: 1800000,
-      allowUnlimitedContractSize: true,
       settings: {
         optimizer: {
           enabled: true,
@@ -64,6 +64,12 @@ export default {
       gasPrice: 250000000000,
       chainId: 250,
       accounts: [getKey('fantom', 'deployer')]
+    },
+    celo: {
+      url: 'https://forno.celo.org',
+      gasPrice: 250000000000,
+      chainId: 42220,
+      accounts: [getKey('celo', 'deployer')],
     }
   },
   paths: {

@@ -1,39 +1,11 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.4;
 
-import "./MockSmartLoanLogicFacetRedstoneProvider.sol";
-
-contract MockSmartLoanLogicFacetSetValues is MockSmartLoanLogicFacetRedstoneProvider {
-    uint256 debt = 777;
-    uint256 value = 999;
-
-    function setDebt(uint256 _newDebt) public {
-        debt = _newDebt;
-    }
-
-    function setValue(uint256 _newValue) public {
-        value = _newValue;
-    }
-
+contract MockSolvencyFacetConstantDebt {
     /**
-     * Dummy implementation used to test SmartLoanDiamond LTV logic
-     **/
-    function getTotalValue() public view override returns (uint256) {
-        return value;
-    }
-
-    function calculateAssetsValue(uint256[] memory prices) internal view virtual override returns (uint256) {
-        return value;
-    }
-
-    function getDebt() public view override returns (uint256) {
-        return debt;
-    }
-
-    function calculateDebt(uint256[] memory prices) internal view virtual override returns (uint256) {
-        return debt;
-    }
-
-    function getLTV() public view override returns (uint256) {
-        return calculateLTV(new uint256[](0));
+    * Always returns 2137 - used in test suits
+    **/
+    function getDebt() public view returns (uint256) {
+        return 2137;
     }
 }

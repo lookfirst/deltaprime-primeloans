@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
 pragma solidity ^0.8.4;
 
@@ -9,7 +9,7 @@ contract MockNFTAccess is NFTAccess {
         __Ownable_init();
     }
 
-    function nftAccessFunction() public view hasAccessNFT returns(uint256 mockResult) {
+    function nftAccessFunction() public view hasAccessNFT returns (uint256 mockResult) {
         mockResult = 777;
     }
 }

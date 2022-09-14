@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 // OpenZeppelin Contracts v4.4.1 (proxy/beacon/IBeacon.sol)
 
 pragma solidity ^0.8.0;
@@ -13,7 +13,7 @@ interface IDiamondBeacon {
     /**
      * @dev Must return an address that can be used as a delegate call target.
      *
-     * {DiamondBeaconProxy} will check that this address is a contract.
+     * {SmartLoanDiamondProxy} will check that this address is a contract.
      */
     function implementation(bytes4) external view returns (address);
 }

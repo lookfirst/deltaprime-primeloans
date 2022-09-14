@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
 pragma solidity ^0.8.4;
 
@@ -12,6 +12,10 @@ interface IYakStakingAVAXAAVEV1 {
     function withdraw(uint256 amount) external;
 
     function depositFor(address account) external payable;
+
+    function deposit() external payable;
+
+    function decimals() external view returns (uint256);
 
     function transfer(address to, uint256 amount) external returns (bool);
 
