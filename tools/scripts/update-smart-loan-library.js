@@ -128,29 +128,5 @@ export default function updateSmartLoanLibrary(poolTokenIndices, poolTokenAddres
 
     fs.writeFileSync('./contracts/lib/SmartLoanLib.sol', result, 'utf8');
 
-    // -------------------
-
-    data = fs.readFileSync('./contracts/faucets/SmartLoanLogicFacet.sol', 'utf8')
-
-    fileArray = data.split('\n');
-
-
-    //getPoolsAssetsIndices()
-    lineWithFunctionDeclaration = fileArray.findIndex(
-      line => line.includes('getPoolsAssetsIndices')
-    );
-
-    fileArray[lineWithFunctionDeclaration] = fileArray[lineWithFunctionDeclaration].replace(/uint8\[(.*)\]/, `uint8[${poolTokenIndices.length}]`);
-
-    newLine = `    return [${poolTokenIndices.toString()}];`;
-
-    fileArray.splice(lineWithFunctionDeclaration + 1, 1, newLine);
-
-    result = fileArray.join("\n");
-
-    fs.writeFileSync('./contracts/faucets/SmartLoanLogicFacet.sol', result, 'utf8');
-
-    // -------------------
-
     return 'lib/SmartLoanLib.sol updated!'
 }
