@@ -178,7 +178,10 @@ export const deployAllFacets = async function (diamondAddress: any, chain = 'AVA
         "OwnershipFacet",
         diamondAddress,
         [
-            'transferOwnership',
+            'proposeOwnershipTransfer',
+            'acceptOwnership',
+            'owner',
+            'proposedOwner'
         ]
     )
     await deployFacet(
@@ -195,18 +198,24 @@ export const deployAllFacets = async function (diamondAddress: any, chain = 'AVA
     await deployFacet("SolvencyFacet", diamondAddress, [])
     if (chain == 'AVAX') {
         await deployFacet("SmartLoanWrappedNativeTokenFacet", diamondAddress, ['depositNativeToken', 'wrapNativeToken', 'unwrapAndWithdraw'])
-        await deployFacet("PangolinDEXFacet", diamondAddress, ['swapPangolin'])
-        await deployFacet("TraderJoeDEXFacet", diamondAddress, ['swapTraderJoe'])
+        await deployFacet("PangolinDEXFacet", diamondAddress, ['swapPangolin', 'addLiquidityPangolin', 'removeLiquidityPangolin'])
+        await deployFacet("TraderJoeDEXFacet", diamondAddress, ['swapTraderJoe', 'addLiquidityTraderJoe', 'removeLiquidityTraderJoe'])
+        await deployFacet("YieldYakFacet", diamondAddress, ['stakeAVAXYak', 'stakeSAVAXYak' ,'unstakeAVAXYak', 'unstakeSAVAXYak', 'stakeTJAVAXUSDCYak', 'unstakeTJAVAXUSDCYak'])
         await deployFacet("VectorFinanceFacet", diamondAddress, [
-            'vectorStakeUSDC1',
-            'vectorUnstakeUSDC1',
-            'vectorStakeUSDC2',
-            'vectorUnstakeUSDC2',
-            'vectorStakeWAVAX1',
-            'vectorUnstakeWAVAX1',
-            'vectorStakeSAVAX1',
-            'vectorUnstakeSAVAX1'
-        ])
+                'vectorStakeUSDC1',
+                'vectorUnstakeUSDC1',
+                'vectorUSDC1Balance',
+                'vectorStakeUSDC2',
+                'vectorUnstakeUSDC2',
+                'vectorUSDC2Balance',
+                'vectorStakeWAVAX1',
+                'vectorUnstakeWAVAX1',
+                'vectorWAVAX1Balance',
+                'vectorStakeSAVAX1',
+                'vectorUnstakeSAVAX1',
+                'vectorSAVAX1Balance'
+            ])
+
     }
     if (chain == 'CELO') {
         await deployFacet("UbeswapDEXFacet", diamondAddress, ['swapUbeswap'])
@@ -311,7 +320,7 @@ export async function deployAndInitializeLendingPool(owner: any, tokenName: stri
             case 'AVAX':
                 tokenContract = new ethers.Contract(AVAX_TOKEN_ADDRESSES['AVAX'], wavaxAbi, provider);
                 for (const user of tokenAirdropList) {
-                    await tokenContract.connect(user).deposit({value: toWei("1000")});
+                    await tokenContract.connect(user).deposit({value: toWei("2000")});
                 }
                 break;
             case 'ETH':

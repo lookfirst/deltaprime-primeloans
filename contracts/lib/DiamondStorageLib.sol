@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 /******************************************************************************\
 * Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
@@ -7,6 +7,7 @@ pragma solidity ^0.8.4;
 /******************************************************************************/
 import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
 import "../lib/Bytes32EnumerableMap.sol";
+import "../interfaces/IStakingPositions.sol";
 
 // Remember to add the loupe functions from DiamondLoupeFacet to the diamond.
 // The loupe functions are required by the EIP2535 Diamonds standard
@@ -47,10 +48,14 @@ library DiamondStorageLib {
     struct SmartLoanStorage {
         // Owner of the contract
         address contractOwner;
+        // Proposed owner of the contract
+        address proposedOwner;
         // Is contract initialized?
         bool _initialized;
         // TODO: mock staking tokens until redstone oracle supports them
         EnumerableMap.Bytes32ToAddressMap ownedAssets;
+        // Staked positions of the contract
+        IStakingPositions.StakedPosition[] currentStakedPositions;
     }
 
     struct ReentrancyGuardStorage {
@@ -89,6 +94,47 @@ library DiamondStorageLib {
 
     function contractOwner() internal view returns (address contractOwner_) {
         contractOwner_ = smartLoanStorage().contractOwner;
+    }
+
+    function setProposedOwner(address _newOwner) internal {
+        SmartLoanStorage storage sls = smartLoanStorage();
+        sls.proposedOwner = _newOwner;
+    }
+
+    function proposedOwner() internal view returns (address proposedOwner_) {
+        proposedOwner_ = smartLoanStorage().proposedOwner;
+    }
+
+    function stakedPositions() internal view returns (IStakingPositions.StakedPosition[] storage _positions) {
+        _positions = smartLoanStorage().currentStakedPositions;
+    }
+
+    function addStakedPosition(IStakingPositions.StakedPosition memory position) internal {
+        IStakingPositions.StakedPosition[] storage positions = stakedPositions();
+
+        bool found;
+
+        for (uint256 i; i < positions.length; i++) {
+            if (positions[i].balanceSelector == position.balanceSelector) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            positions.push(position);
+        }
+    }
+
+    function removeStakedPosition(bytes4 balanceSelector) internal {
+        IStakingPositions.StakedPosition[] storage positions = stakedPositions();
+
+        for (uint256 i; i < positions.length; i++) {
+            if (positions[i].balanceSelector == balanceSelector) {
+                positions[i] = positions[positions.length - 1];
+                positions.pop();
+            }
+        }
     }
 
     function addOwnedAsset(bytes32 _symbol, address _address) internal {

@@ -1,20 +1,47 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../ReentrancyGuardKeccak.sol";
 import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
-import "../lib/SolvencyMethodsLib.sol";
+import "../lib/SolvencyMethods.sol";
 import {DiamondStorageLib} from "../lib/DiamondStorageLib.sol";
 
 //This path is updated during deployment
 import "../lib/local/DeploymentConstants.sol";
 import "../interfaces/IAssetsExchange.sol";
 
-contract UniswapV2DEXFacet is ReentrancyGuardKeccak, SolvencyMethodsLib {
+contract UniswapV2DEXFacet is ReentrancyGuardKeccak, SolvencyMethods {
     using TransferHelper for address payable;
     using TransferHelper for address;
+
+    function getProtocolID() pure internal virtual returns (bytes32) {
+        return "";
+    }
+
+    function stringToBytes32(string memory source) public pure returns (bytes32 result) {
+        bytes memory tempEmptyStringTest = bytes(source);
+        if (tempEmptyStringTest.length == 0) {
+            return 0x0;
+        }
+
+        assembly {
+            result := mload(add(source, 32))
+        }
+    }
+
+    function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
+        uint8 i = 0;
+        while(i < 32 && _bytes32[i] != 0) {
+            i++;
+        }
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
+    }
 
     /**
     * Swaps one asset with another
@@ -53,6 +80,84 @@ contract UniswapV2DEXFacet is ReentrancyGuardKeccak, SolvencyMethodsLib {
     }
 
     /**
+    * Adds liquidity
+    **/
+    function addLiquidity(bytes32 _firstAsset, bytes32 _secondAsset, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin) internal remainsSolvent {
+        IERC20Metadata tokenA = getERC20TokenInstance(_firstAsset, true);
+        IERC20Metadata tokenB = getERC20TokenInstance(_secondAsset, false);
+
+        require(tokenA.balanceOf(address(this)) >= amountADesired, "Not enough tokenA to provide");
+        require(tokenB.balanceOf(address(this)) >= amountBDesired, "Not enough tokenB to provide");
+
+        address(tokenA).safeTransfer(getExchangeIntermediaryContract(), amountADesired);
+        address(tokenB).safeTransfer(getExchangeIntermediaryContract(), amountBDesired);
+
+        IAssetsExchange exchange = IAssetsExchange(getExchangeIntermediaryContract());
+
+        address lpTokenAddress = exchange.addLiquidity(address(tokenA), address(tokenB), amountADesired, amountBDesired, amountAMin, amountBMin);
+
+        TokenManager tokenManager = DeploymentConstants.getTokenManager();
+
+        if (IERC20Metadata(lpTokenAddress).balanceOf(address(this)) > 0) {
+            (bytes32 token0, bytes32 token1) = _firstAsset < _secondAsset ? (_firstAsset, _secondAsset) : (_secondAsset, _firstAsset);
+            bytes32 lpToken = stringToBytes32(string.concat(
+                    bytes32ToString(getProtocolID()),
+                        '_',
+                        bytes32ToString(token0),
+                        '_',
+                        bytes32ToString(token1)
+                )
+            );
+            DiamondStorageLib.addOwnedAsset(lpToken, lpTokenAddress);
+        }
+
+        // Remove asset from ownedAssets if the asset balance is 0 after the LP
+        if (tokenA.balanceOf(address(this)) == 0) {
+            DiamondStorageLib.removeOwnedAsset(_firstAsset);
+        }
+
+        if (tokenB.balanceOf(address(this)) == 0) {
+            DiamondStorageLib.removeOwnedAsset(_secondAsset);
+        }
+
+        emit AddLiquidity(_firstAsset, _secondAsset, amountADesired, amountBDesired, amountAMin, amountBMin, block.timestamp);
+    }
+
+    /**
+    * Removes liquidity
+    **/
+    function removeLiquidity(bytes32 _firstAsset, bytes32 _secondAsset, uint liquidity, uint amountAMin, uint amountBMin) internal remainsSolvent {
+        IERC20Metadata tokenA = getERC20TokenInstance(_firstAsset, true);
+        IERC20Metadata tokenB = getERC20TokenInstance(_secondAsset, false);
+
+        IAssetsExchange exchange = IAssetsExchange(getExchangeIntermediaryContract());
+
+        address lpTokenAddress = exchange.getPair(address(tokenA), address(tokenB));
+
+        lpTokenAddress.safeTransfer(getExchangeIntermediaryContract(), liquidity);
+
+        exchange.removeLiquidity(address(tokenA), address(tokenB), liquidity, amountAMin, amountBMin);
+
+        TokenManager tokenManager = DeploymentConstants.getTokenManager();
+
+        // Remove asset from ownedAssets if the asset balance is 0 after the LP
+        if (IERC20Metadata(lpTokenAddress).balanceOf(address(this)) == 0) {
+            (bytes32 token0, bytes32 token1) = _firstAsset < _secondAsset ? (_firstAsset, _secondAsset) : (_secondAsset, _firstAsset);
+            bytes32 lpToken = stringToBytes32(string.concat(
+                    bytes32ToString(getProtocolID()),
+                    '_',
+                    bytes32ToString(token0),
+                    '_',
+                    bytes32ToString(token1)
+                )
+            );
+            DiamondStorageLib.removeOwnedAsset(lpToken);
+        }
+
+        emit RemoveLiquidity(_firstAsset, _secondAsset, liquidity, amountAMin, amountBMin, block.timestamp);
+    }
+
+    /**
      * Returns address of DeltaPrime intermediary contract of UniswapV2-like exchange
      **/
     //TO BE OVERRIDDEN
@@ -75,4 +180,14 @@ contract UniswapV2DEXFacet is ReentrancyGuardKeccak, SolvencyMethodsLib {
      * @param timestamp time of the swap
      **/
     event Swap(address indexed investor, bytes32 indexed soldAsset, bytes32 indexed boughtAsset, uint256 _maximumSold, uint256 _minimumBought, uint256 timestamp);
+
+    /**
+     * @dev emitted after LP
+     **/
+    event AddLiquidity(bytes32 _firstAsset, bytes32 _secondAsset, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, uint256 timestamp);
+
+    /**
+     * @dev emitted after removing LP
+     **/
+    event RemoveLiquidity(bytes32 _firstAsset, bytes32 _secondAsset, uint liquidity, uint amountAMin, uint amountBMin, uint256 timestamp);
 }

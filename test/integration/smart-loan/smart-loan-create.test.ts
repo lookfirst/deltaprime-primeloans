@@ -51,7 +51,7 @@ describe('Smart loan', () => {
             USD_PRICE: number,
             ETH_PRICE: number;
 
-        before("deploy factory, exchange, WrappedNativeTokenPool and usdPool", async () => {
+        before("deploy factory, exchange, wrapped native token pool and USD pool", async () => {
             [owner, depositor, borrower1, borrower2] = await getFixedGasSigners(10000000);
 
             let redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(["0xFE71e9691B9524BC932C23d0EeD5c9CE41161884"]));
@@ -159,7 +159,7 @@ describe('Smart loan', () => {
 
             await tokenContracts['AVAX'].connect(borrower2).deposit({value: toWei("1")});
             await tokenContracts['AVAX'].connect(borrower2).approve(smartLoansFactory.address, toWei("1"));
-            await wrappedSmartLoansFactory.createAndFundLoan(toBytes32("AVAX"), TOKEN_ADDRESSES['AVAX'], toWei("1"), toBytes32("MCKUSD"), toWei((2 * AVAX_PRICE).toString()));
+            await wrappedSmartLoansFactory.createAndFundLoan(toBytes32("AVAX"), TOKEN_ADDRESSES['AVAX'], toWei("1"));
 
             const loanAddress = await smartLoansFactory.getLoanForOwner(borrower2.address);
             loan = await ethers.getContractAt("SmartLoanGigaChadInterface", loanAddress, borrower2);
@@ -174,10 +174,10 @@ describe('Smart loan', () => {
                         }
                     })
 
-            expect(fromWei(await wrappedLoan.getDebt())).to.be.closeTo(2 * AVAX_PRICE, 0.05)
-            expect(fromWei(await wrappedLoan.getTotalValue())).to.be.closeTo(3 * AVAX_PRICE, 0.05)
+            expect(fromWei(await wrappedLoan.getDebt())).to.be.equal(0)
+            expect(fromWei(await wrappedLoan.getTotalValue())).to.be.closeTo(1 * AVAX_PRICE, 0.05)
             expect(fromWei(await tokenContracts['AVAX'].balanceOf(loan.address))).to.equal(1);
-            expect(fromWei(await tokenContracts['MCKUSD'].balanceOf(loan.address))).to.be.closeTo(2 * AVAX_PRICE, 0.05);
+            expect(fromWei(await tokenContracts['MCKUSD'].balanceOf(loan.address))).to.be.equal(0);
         });
     });
 });

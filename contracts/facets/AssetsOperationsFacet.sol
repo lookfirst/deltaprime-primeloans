@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
 import "../ReentrancyGuardKeccak.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import {DiamondStorageLib} from "../lib/DiamondStorageLib.sol";
-import "../lib/SolvencyMethodsLib.sol";
+import "../lib/SolvencyMethods.sol";
 import "../TokenManager.sol";
 
 //this path is updated during deployment
 import "../lib/local/DeploymentConstants.sol";
 
-contract AssetsOperationsFacet is ReentrancyGuardKeccak, SolvencyMethodsLib {
+contract AssetsOperationsFacet is ReentrancyGuardKeccak, SolvencyMethods {
     using TransferHelper for address payable;
     using TransferHelper for address;
 

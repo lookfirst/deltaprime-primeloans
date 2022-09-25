@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 import "./facets/avalanche/IYieldYakFacet.sol";
 import "./facets/avalanche/IPangolinDEXFacet.sol";
@@ -11,7 +11,8 @@ import "./facets/ISmartLoanLiquidationFacet.sol";
 import "./facets/ISmartLoanWrappedNativeTokenFacet.sol";
 import "./facets/ISolvencyFacet.sol";
 import "./facets/celo/IUbeswapDEXFacet.sol";
+import "./facets/avalanche/IVectorFinanceFacet.sol";
 
-interface SmartLoanGigaChadInterface is ISmartLoanWrappedNativeTokenFacet, IPangolinDEXFacet, IAssetsOperationsFacet, IOwnershipFacet, ISmartLoanLiquidationFacet, ISmartLoanViewFacet, ISolvencyFacet, IYieldYakFacet, IUbeswapDEXFacet, ITraderJoeDEXFacet {
+interface SmartLoanGigaChadInterface is ISmartLoanWrappedNativeTokenFacet, IPangolinDEXFacet, IAssetsOperationsFacet, IOwnershipFacet, ISmartLoanLiquidationFacet, ISmartLoanViewFacet, ISolvencyFacet, IYieldYakFacet, IVectorFinanceFacet, IUbeswapDEXFacet, ITraderJoeDEXFacet {
 
 }

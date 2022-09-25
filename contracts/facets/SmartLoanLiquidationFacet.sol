@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../ReentrancyGuardKeccak.sol";
 import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../lib/SolvencyMethodsLib.sol";
+import "../lib/SolvencyMethods.sol";
 import "../Pool.sol";
 import "../TokenManager.sol";
 
 //This path is updated during deployment
 import "../lib/local/DeploymentConstants.sol";
 
-contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethodsLib {
+contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethods {
 
     //IMPORTANT: KEEP IT IDENTICAL ACROSS FACETS TO BE PROPERLY UPDATED BY DEPLOYMENT SCRIPTS
     uint256 private constant _MAX_LTV = 5000;
@@ -80,11 +80,11 @@ contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethodsLib 
     function unsafeLiquidateLoan(bytes32[] memory assetsToRepay, uint256[] memory amountsToRepay, uint256 _liquidationBonus) external payable nonReentrant {
         liquidate(
             LiquidationConfig({
-        assetsToRepay : assetsToRepay,
-        amountsToRepay : amountsToRepay,
-        liquidationBonus : _liquidationBonus,
-        allowUnprofitableLiquidation : true
-        })
+                assetsToRepay : assetsToRepay,
+                amountsToRepay : amountsToRepay,
+                liquidationBonus : _liquidationBonus,
+                allowUnprofitableLiquidation : true
+            })
         );
     }
 
@@ -102,11 +102,11 @@ contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethodsLib 
     function liquidateLoan(bytes32[] memory assetsToRepay, uint256[] memory amountsToRepay, uint256 _liquidationBonus) external payable nonReentrant {
         liquidate(
             LiquidationConfig({
-        assetsToRepay : assetsToRepay,
-        amountsToRepay : amountsToRepay,
-        liquidationBonus : _liquidationBonus,
-        allowUnprofitableLiquidation : false
-        })
+                assetsToRepay : assetsToRepay,
+                amountsToRepay : amountsToRepay,
+                liquidationBonus : _liquidationBonus,
+                allowUnprofitableLiquidation : false
+            })
         );
     }
 
@@ -123,7 +123,7 @@ contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethodsLib 
     function liquidate(LiquidationConfig memory config) internal {
         TokenManager tokenManager = DeploymentConstants.getTokenManager();
 
-        uint256[] memory prices = SolvencyMethodsLib.executeGetPricesFromMsg(config.assetsToRepay);
+        uint256[] memory prices = SolvencyMethods.getPrices(config.assetsToRepay);
 
         uint256 initialTotal = _getTotalValue();
         uint256 initialDebt = _getDebt();
@@ -185,11 +185,12 @@ contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethodsLib 
         bonus = repaidInUSD * config.liquidationBonus / DeploymentConstants.getPercentagePrecision();
 
         //meaning returning all tokens
-        uint256 partToReturn = 10 ** 18;
+        uint256 partToReturn = 10 ** 18; // 1
+        uint256 assetsValue = _getTotalAssetsValue();
 
-        if (!healingLoan && total >= suppliedInUSD + bonus) {
+        if (!healingLoan && assetsValue >= suppliedInUSD + bonus) {
             //in that scenario we calculate how big part of token to return
-            partToReturn = (suppliedInUSD + bonus) * 10 ** 18 / total;
+            partToReturn = (suppliedInUSD + bonus) * 10 ** 18 / assetsValue;
         }
 
         // Native token transfer

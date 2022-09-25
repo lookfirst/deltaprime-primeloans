@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: c5c938a0524b45376dd482cd5c8fb83fa94c2fcc;
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 import "../UniswapV2Intermediary.sol";
+import "../../lib/local/DeploymentConstants.sol";
 
 /**
  * @title UbeswapIntermediary
@@ -25,6 +26,6 @@ contract UbeswapIntermediary is UniswapV2Intermediary {
   }
 
   function getNativeTokenAddress() override internal view returns (address) {
-    return 0x471EcE3750Da237f93B8E339c536989b8978a438;
+    return DeploymentConstants.getNativeToken();
   }
 }

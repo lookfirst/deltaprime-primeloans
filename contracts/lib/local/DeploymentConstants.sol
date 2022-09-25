@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 import "../../TokenManager.sol";
 import {DiamondStorageLib} from "../../lib/DiamondStorageLib.sol";
@@ -21,13 +21,13 @@ library DeploymentConstants {
 
     address private constant _NATIVE_ADDRESS = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
-    address private constant _DIAMOND_BEACON_ADDRESS = 0x4CF4dd3f71B67a7622ac250f8b10d266Dc5aEbcE;
+    address private constant _DIAMOND_BEACON_ADDRESS = 0x6C2d83262fF84cBaDb3e416D527403135D757892;
 
-    address private constant _SMART_LOANS_FACTORY_ADDRESS = 0xE2b5bDE7e80f89975f7229d78aD9259b2723d11F;
+    address private constant _SMART_LOANS_FACTORY_ADDRESS = 0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE;
 
-    address private constant _TOKEN_MANAGER_ADDRESS = 0x3abBB0D6ad848d64c8956edC9Bf6f18aC22E1485;
+    address private constant _TOKEN_MANAGER_ADDRESS = 0x02b0B4EFd909240FCB2Eb5FAe060dC60D112E3a4;
 
-    address private constant _REDSTONE_CONFIG_MANAGER_ADDRESS = 0x0bF7dE8d71820840063D4B8653Fd3F0618986faF;
+    address private constant _REDSTONE_CONFIG_MANAGER_ADDRESS = 0x976fcd02f7C4773dd89C309fBF55D5923B4c98a1;
 
     //implementation-specific
 
