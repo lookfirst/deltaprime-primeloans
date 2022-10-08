@@ -195,7 +195,17 @@ export const deployAllFacets = async function (diamondAddress: any, chain = 'AVA
         ],
         ''
     )
-    await deployFacet("SolvencyFacet", diamondAddress, [])
+    await deployFacet("SolvencyFacet", diamondAddress, [
+        'getLTV',
+        'getTotalValue',
+        'getFullLoanStatus',
+        'getMaxLtv',
+        'getStakedValue',
+        'getTotalAssetsValue',
+        'getDebt',
+        'isSolvent',
+        'getMaxBlockTimestampDelay'
+    ])
     if (chain == 'AVAX') {
         await deployFacet("SmartLoanWrappedNativeTokenFacet", diamondAddress, ['depositNativeToken', 'wrapNativeToken', 'unwrapAndWithdraw'])
         await deployFacet("PangolinDEXFacet", diamondAddress, ['swapPangolin', 'addLiquidityPangolin', 'removeLiquidityPangolin'])

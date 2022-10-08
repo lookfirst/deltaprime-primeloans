@@ -26,8 +26,8 @@ contract YieldYakFacet is ReentrancyGuardKeccak, SolvencyMethods {
     address private constant YAKStakingVectorSAV2Address = 0xd0F41b1C9338eB9d374c83cC76b684ba3BB71557;
 
     // LPs
-    address private constant YY_TJ_AVAX_USDC = 0xDEf94a13fF31FB6363f1e03bF18fe0F59Db83BBC;
-    address private constant TJ_AVAX_USDC_ADDRESS = 0xf4003F4efBE8691B60249E6afbD307aBE7758adb;
+    address private constant YY_TJ_AVAX_USDC_LP = 0xDEf94a13fF31FB6363f1e03bF18fe0F59Db83BBC;
+    address private constant TJ_AVAX_USDC_LP_ADDRESS = 0xf4003F4efBE8691B60249E6afbD307aBE7758adb;
 
     // TODO: Change name to a more unique one for this exact investment strategy
     /**
@@ -70,29 +70,29 @@ contract YieldYakFacet is ReentrancyGuardKeccak, SolvencyMethods {
     }
 
     /**
-      * Stakes TJ_AVAX_USDC in Yield Yak protocol
+      * Stakes TJ_AVAX_USDC_LP in Yield Yak protocol
       * @dev This function uses the redstone-evm-connector
-      * @param amount amount of TJ_AVAX_USDC to be staked
+      * @param amount amount of TJ_AVAX_USDC_LP to be staked
   **/
     function stakeTJAVAXUSDCYak(uint256 amount) public onlyOwner nonReentrant remainsSolvent {
         require(amount > 0, "Cannot stake 0 tokens");
-        require(IERC20Metadata(TJ_AVAX_USDC_ADDRESS).balanceOf(address(this)) >= amount, "Not enough TJ_AVAX_USDC available");
+        require(IERC20Metadata(TJ_AVAX_USDC_LP_ADDRESS).balanceOf(address(this)) >= amount, "Not enough TJ_AVAX_USDC_LP available");
 
-        IERC20Metadata(TJ_AVAX_USDC_ADDRESS).approve(address(YY_TJ_AVAX_USDC), amount);
+        IERC20Metadata(TJ_AVAX_USDC_LP_ADDRESS).approve(address(YY_TJ_AVAX_USDC_LP), amount);
 
         // TODO: Change the name of interface
-        IYakStakingVectorSAV2(YY_TJ_AVAX_USDC).deposit(amount);
+        IYakStakingVectorSAV2(YY_TJ_AVAX_USDC_LP).deposit(amount);
 
         // TODO make staking more generic
         // Add asset to ownedAssets
-        DiamondStorageLib.addOwnedAsset("YY_TJ_AVAX_USDC", YY_TJ_AVAX_USDC);
+        DiamondStorageLib.addOwnedAsset("YY_TJ_AVAX_USDC_LP", YY_TJ_AVAX_USDC_LP);
 
-        emit Staked(msg.sender, "TJ_AVAX_USDC", amount, block.timestamp);
+        emit Staked(msg.sender, "TJ_AVAX_USDC_LP", amount, block.timestamp);
     }
 
 
     function unstakeTJAVAXUSDCYak(uint256 amount) public onlyOwner nonReentrant remainsSolvent {
-        IYakStakingVectorSAV2 yakStakingContract = IYakStakingVectorSAV2(YY_TJ_AVAX_USDC);
+        IYakStakingVectorSAV2 yakStakingContract = IYakStakingVectorSAV2(YY_TJ_AVAX_USDC_LP);
         uint256 initialStakedBalance = yakStakingContract.balanceOf(address(this));
 
         require(initialStakedBalance >= amount, "Cannot unstake more than was initially staked");
@@ -101,7 +101,7 @@ contract YieldYakFacet is ReentrancyGuardKeccak, SolvencyMethods {
 
         // TODO make unstaking more generic
         if(yakStakingContract.balanceOf(address(this)) == 0) {
-            DiamondStorageLib.removeOwnedAsset("YY_TJ_AVAX_USDC");
+            DiamondStorageLib.removeOwnedAsset("YY_TJ_AVAX_USDC_LP");
         }
 
         emit Unstaked(msg.sender, "SAVAX", amount, block.timestamp);

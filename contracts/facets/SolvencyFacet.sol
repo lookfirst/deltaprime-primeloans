@@ -134,7 +134,7 @@ contract SolvencyFacet is PriceAware, DiamondHelper {
         return getTotalAssetsValue() + getStakedValue();
     }
 
-    function getFullLoanStatus() public returns (uint256[4] memory) {
+    function getFullLoanStatus() public view returns (uint256[4] memory) {
         return [getTotalValue(), getDebt(), getLTV(), isSolvent() ? uint256(1) : uint256(0)];
     }
 
