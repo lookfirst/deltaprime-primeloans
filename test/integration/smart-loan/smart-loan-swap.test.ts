@@ -75,6 +75,11 @@ describe('Smart loan', () => {
 
             let redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(["0xFE71e9691B9524BC932C23d0EeD5c9CE41161884"]));
 
+            let diamondAddress = await deployDiamond();
+
+            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
+            await smartLoansFactory.initialize(diamondAddress);
+
             let lendingPools = [];
             for (const token of [
                 {'name': 'MCKUSD', 'airdropList': [owner.address, depositor.address]},
@@ -83,7 +88,7 @@ describe('Smart loan', () => {
                 let {
                     poolContract,
                     tokenContract
-                } = await deployAndInitializeLendingPool(owner, token.name, token.airdropList);
+                } = await deployAndInitializeLendingPool(owner, token.name, smartLoansFactory.address, token.airdropList);
                 await tokenContract!.connect(depositor).approve(poolContract.address, toWei("1000"));
                 await poolContract.connect(depositor).deposit(toWei("1000"));
                 lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
@@ -107,11 +112,6 @@ describe('Smart loan', () => {
                     lendingPools
                 ]
             ) as TokenManager;
-
-            let diamondAddress = await deployDiamond();
-
-            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
-            await smartLoansFactory.initialize(diamondAddress);
 
             await recompileConstantsFile(
                 'local',

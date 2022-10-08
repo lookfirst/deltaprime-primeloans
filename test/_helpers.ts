@@ -306,7 +306,7 @@ export async function syncTime() {
     }
 }
 
-export async function deployAndInitializeLendingPool(owner: any, tokenName: string, tokenAirdropList: any, chain = 'AVAX') {
+export async function deployAndInitializeLendingPool(owner: any, tokenName: string, smartLoansFactoryAddress: string, tokenAirdropList: any, chain = 'AVAX') {
 
     const variableUtilisationRatesCalculator = (await deployContract(owner, VariableUtilisationRatesCalculatorArtifact)) as VariableUtilisationRatesCalculator;
     let pool = (await deployContract(owner, PoolArtifact)) as Pool;
@@ -348,12 +348,11 @@ export async function deployAndInitializeLendingPool(owner: any, tokenName: stri
         }
     }
 
-    const borrowersRegistry = await (new OpenBorrowersRegistry__factory(owner).deploy());
     const depositIndex = (await deployContract(owner, CompoundingIndexArtifact, [pool.address])) as CompoundingIndex;
     const borrowingIndex = (await deployContract(owner, CompoundingIndexArtifact, [pool.address])) as CompoundingIndex;
     await pool.initialize(
         variableUtilisationRatesCalculator.address,
-        borrowersRegistry.address,
+        smartLoansFactoryAddress,
         depositIndex.address,
         borrowingIndex.address,
         tokenContract!.address

@@ -71,7 +71,13 @@ describe('Smart loan', () => {
 
             let redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(["0xFE71e9691B9524BC932C23d0EeD5c9CE41161884"]));
 
+            let diamondAddress = await deployDiamond();
+
             nftContract = (await deployContract(owner, MockBorrowAccessNFTArtifact)) as MockBorrowAccessNFT;
+
+            smartLoansFactory = await deployContract(owner, SmartLoansFactoryWithAccessNFTArtifact) as SmartLoansFactoryWithAccessNFT;
+            await smartLoansFactory.initialize(diamondAddress);
+            await smartLoansFactory.connect(owner).setAccessNFT(nftContract.address);
 
             let lendingPools = [];
             for (const token of [
@@ -80,7 +86,7 @@ describe('Smart loan', () => {
                 let {
                     poolContract,
                     tokenContract
-                } = await deployAndInitializeLendingPool(owner, token.name, token.airdropList);
+                } = await deployAndInitializeLendingPool(owner, token.name, smartLoansFactory.address, token.airdropList);
                 await tokenContract!.connect(depositor).approve(poolContract.address, toWei("1000"));
                 await poolContract.connect(depositor).deposit(toWei("1000"));
                 lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
@@ -99,13 +105,6 @@ describe('Smart loan', () => {
                     lendingPools
                 ]
             ) as TokenManager;
-
-            let diamondAddress = await deployDiamond();
-
-
-            smartLoansFactory = await deployContract(owner, SmartLoansFactoryWithAccessNFTArtifact) as SmartLoansFactoryWithAccessNFT;
-            await smartLoansFactory.initialize(diamondAddress);
-            await smartLoansFactory.connect(owner).setAccessNFT(nftContract.address);
 
             await recompileConstantsFile(
                 'local',

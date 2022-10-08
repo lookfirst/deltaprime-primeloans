@@ -84,6 +84,11 @@ describe('Test liquidator', () => {
                     ])
             );
 
+            diamondAddress = await deployDiamond();
+
+            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
+            await smartLoansFactory.initialize(diamondAddress);
+
             let lendingPools = [];
             for (const token of [
                 {'name': 'USDC', 'airdropList': [], 'autoPoolDeposit': false},
@@ -92,7 +97,7 @@ describe('Test liquidator', () => {
                 let {
                     poolContract,
                     tokenContract
-                } = await deployAndInitializeLendingPool(owner, token.name, token.airdropList);
+                } = await deployAndInitializeLendingPool(owner, token.name, smartLoansFactory.address, token.airdropList);
                 if (token.autoPoolDeposit) {
                     await tokenContract!.connect(depositor).approve(poolContract.address, toWei("1000"));
                     await poolContract.connect(depositor).deposit(toWei("1000"));
@@ -134,8 +139,6 @@ describe('Test liquidator', () => {
                 ]
             ) as TokenManager;
 
-            diamondAddress = await deployDiamond();
-
             await recompileConstantsFile(
                 'local',
                 "DeploymentConstants",
@@ -148,9 +151,6 @@ describe('Test liquidator', () => {
             );
 
             exchange = await deployAndInitExchangeContract(owner, pangolinRouterAddress, supportedAssets.map(asset => asset.assetAddress), "PangolinIntermediary") as PangolinIntermediary;
-
-            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
-            await smartLoansFactory.initialize(diamondAddress);
 
             await recompileConstantsFile(
                 'local',

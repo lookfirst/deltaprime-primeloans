@@ -73,6 +73,11 @@ describe('Smart loan - upgrading', () => {
 
             let redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(["0xFE71e9691B9524BC932C23d0EeD5c9CE41161884"]));
 
+            diamondAddress = await deployDiamond();
+
+            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
+            await smartLoansFactory.initialize(diamondAddress);
+
             let lendingPools = [];
             // TODO: Possibly further extract the body of this for loop into a separate function shared among test suits
             for (const token of [
@@ -81,7 +86,7 @@ describe('Smart loan - upgrading', () => {
                 let {
                     poolContract,
                     tokenContract
-                } = await deployAndInitializeLendingPool(owner, token.name, token.airdropList);
+                } = await deployAndInitializeLendingPool(owner, token.name, smartLoansFactory.address, token.airdropList);
                 await tokenContract!.connect(depositor).approve(poolContract.address, toWei("1000"));
                 await poolContract.connect(depositor).deposit(toWei("1000"));
                 lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
@@ -116,11 +121,6 @@ describe('Smart loan - upgrading', () => {
                     lendingPools
                 ]
             ) as TokenManager;
-
-            diamondAddress = await deployDiamond();
-
-            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
-            await smartLoansFactory.initialize(diamondAddress);
 
             await recompileConstantsFile(
                 'local',
