@@ -17,7 +17,9 @@ const supportedAssets = [
     asset('sAVAX'),
     asset('PNG_AVAX_USDC_LP'),
     asset('TJ_AVAX_USDC_LP'),
-    asset('YY_TJ_AVAX_USDC_LP')
+    asset('YYAV3SA1'),
+    asset('SAV2'),
+    asset('YY_TJ_AVAX_USDC_LP'),
 ]
 
 function asset(symbol) {
