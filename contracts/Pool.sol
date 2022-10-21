@@ -351,6 +351,10 @@ contract Pool is OwnableUpgradeable, ReentrancyGuardUpgradeable, IERC20 {
         borrowIndex.updateUser(address(this));
     }
 
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override {}
+
     /* ========== MODIFIERS ========== */
 
     modifier canBorrow() {

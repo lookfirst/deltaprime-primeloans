@@ -105,4 +105,8 @@ contract VariableUtilisationRatesCalculator is IRatesCalculator, Ownable {
         require(_spread < 1e18, "Spread must be smaller than 1e18");
         spread = _spread;
     }
+
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override {}
 }

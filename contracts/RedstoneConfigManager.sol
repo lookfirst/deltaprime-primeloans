@@ -58,4 +58,8 @@ contract RedstoneConfigManager is Ownable {
             }
         }
     }
+
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override {}
 }

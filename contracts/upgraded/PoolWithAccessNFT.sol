@@ -8,6 +8,10 @@ import "../Pool.sol";
 contract PoolWithAccessNFT is NFTAccess, Pool {
     using TransferHelper for address payable;
 
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override(Pool, OwnableUpgradeable) {}
+
     /**
       * Requires access NFT
       * Deposits the message value

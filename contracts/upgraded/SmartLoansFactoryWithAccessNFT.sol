@@ -6,6 +6,10 @@ import "../abstract/NFTAccess.sol";
 import "../SmartLoansFactory.sol";
 
 contract SmartLoansFactoryWithAccessNFT is NFTAccess, SmartLoansFactory {
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override(SmartLoansFactory, OwnableUpgradeable) {}
+
     function createLoan() public override hasNoLoan hasAccessNFT returns (SmartLoanDiamondBeacon) {
         return super.createLoan();
     }

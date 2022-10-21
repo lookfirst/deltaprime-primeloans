@@ -120,6 +120,10 @@ contract SmartLoansFactory is OwnableUpgradeable, IBorrowersRegistry {
         return loans;
     }
 
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override {}
+
     /**
      * @dev emitted after creating a loan by the owner
      * @param accountAddress address of a new SmartLoanDiamondBeacon
