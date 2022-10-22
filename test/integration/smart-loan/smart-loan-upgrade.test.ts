@@ -206,12 +206,18 @@ describe('Smart loan - upgrading', () => {
         });
 
         it("should not allow to upgrade from non-owner", async () => {
-            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, borrower);
-            await expect(diamondCut.diamondCut([], ethers.constants.AddressZero, [])).to.be.revertedWith('DiamondStorageLib: Must be contract owner');
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await diamondCut.pause();
+            await expect(diamondCut.connect(borrower).diamondCut([], ethers.constants.AddressZero, [])).to.be.revertedWith('DiamondStorageLib: Must be contract owner');
+            await diamondCut.unpause();
         });
 
 
         it("should upgrade", async () => {
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await expect(replaceFacet("MockSolvencyFacetConstantDebt", diamondAddress, ['getDebt'])).to.be.revertedWith('ProtocolUpgrade: not paused.');
+
+            await diamondCut.pause()
             await replaceFacet("MockSolvencyFacetConstantDebt", diamondAddress, ['getDebt'])
 
             const loan_proxy_address = await smartLoansFactory.getLoanForOwner(borrower.address);
@@ -227,6 +233,9 @@ describe('Smart loan - upgrading', () => {
                         }
                     })
 
+            await expect(wrappedLoan.getDebt()).to.be.revertedWith('ProtocolUpgrade: paused.');
+
+            await diamondCut.unpause();
             //The mock loan has a hardcoded debt of 2137
             expect(await wrappedLoan.getDebt()).to.be.equal(2137);
         });

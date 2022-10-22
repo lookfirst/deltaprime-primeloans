@@ -290,11 +290,16 @@ describe('Smart loan', () => {
         it("should allow anyone to unstake if insolvent", async () => {
             await expect(nonOwnerWrappedLoan.vectorUnstakeUSDC1(parseUnits('2', BigNumber.from("6")), parseUnits('1', BigNumber.from("6")))).to.be.revertedWith("DiamondStorageLib: Must be contract owner");;
 
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await diamondCut.pause();
             await replaceFacet('MockSolvencyFacetAlwaysSolvent', diamondAddress, ['isSolvent']);
+            await diamondCut.unpause();
 
             await wrappedLoan.borrow(toBytes32("AVAX"), toWei("1100"));
 
+            await diamondCut.pause();
             await replaceFacet('SolvencyFacet', diamondAddress, ['isSolvent']);
+            await diamondCut.unpause();
 
             expect(await wrappedLoan.isSolvent()).to.be.false;
 

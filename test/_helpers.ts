@@ -174,6 +174,9 @@ export const getFixedGasSigners = async function (gasLimit: number) {
 
 
 export const deployAllFacets = async function (diamondAddress: any, chain = 'AVAX') {
+    const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress);
+    console.log('Pausing')
+    await diamondCut.pause();
     await deployFacet(
         "OwnershipFacet",
         diamondAddress,
@@ -243,6 +246,8 @@ export const deployAllFacets = async function (diamondAddress: any, chain = 'AVA
             'getAllOwnedAssets',
         ]
     )
+    await diamondCut.unpause();
+    console.log('Unpaused')
 };
 
 export const extractAssetNameBalances = async function (

@@ -437,8 +437,11 @@ describe('Smart loan - real prices', () => {
             );
             await deployAllFacets(diamondAddress);
 
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await diamondCut.pause();
             //this facet is used to override max data timestamp delay
             await replaceFacet('MockSolvencyFacet', diamondAddress, ['isSolvent', 'getDebt', 'getTotalValue', 'getTotalAssetsValue', 'getLTV', 'getPrices']);
+            await diamondCut.unpause();
         });
 
         beforeEach("create a loan", async () => {
@@ -458,7 +461,10 @@ describe('Smart loan - real prices', () => {
                 'lib'
             );
 
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await diamondCut.pause();
             await replaceFacet('MockSolvencyFacetAlwaysSolvent', diamondAddress, ['isSolvent']);
+            await diamondCut.unpause();
         });
 
 
@@ -659,8 +665,11 @@ describe('Smart loan - real prices', () => {
             performer: any
         ) {
 
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await diamondCut.pause();
             //this facet is used to override max data timestamp delay
             await replaceFacet('MockSolvencyFacet', diamondAddress, ['isSolvent', 'getDebt', 'getTotalValue', 'getTotalAssetsValue', 'getLTV', 'getPrices']);
+            await diamondCut.unpause();
 
             const initialStakedYakTokensBalance = await tokenContracts['YYAV3SA1'].balanceOf(performer.address);
 

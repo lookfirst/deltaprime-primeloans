@@ -168,7 +168,10 @@ describe('Test liquidator', () => {
                 'lib'
             );
             await deployAllFacets(diamondAddress);
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await diamondCut.pause();
             await replaceFacet('MockSolvencyFacetAlwaysSolvent', diamondAddress, ['isSolvent']);
+            await diamondCut.unpause();
         });
 
 
@@ -209,7 +212,10 @@ describe('Test liquidator', () => {
         });
 
         it("replace facet", async () => {
+            const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress, owner);
+            await diamondCut.pause();
             await replaceFacet('SolvencyFacet', diamondAddress, ['isSolvent']);
+            await diamondCut.unpause();
 
             expect(await wrappedLoan.isSolvent()).to.be.false;
         });

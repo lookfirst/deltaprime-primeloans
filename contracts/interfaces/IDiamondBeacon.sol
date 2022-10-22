@@ -16,4 +16,6 @@ interface IDiamondBeacon {
      * {SmartLoanDiamondProxy} will check that this address is a contract.
      */
     function implementation(bytes4) external view returns (address);
+
+    function getStatus() external view returns (bool);
 }

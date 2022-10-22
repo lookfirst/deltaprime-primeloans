@@ -42,7 +42,8 @@ library DiamondStorageLib {
         // Used to implement ERC-165.
         mapping(bytes4 => bool) supportedInterfaces;
 
-
+        bool _initialized;
+        bool _active;
     }
 
     struct SmartLoanStorage {

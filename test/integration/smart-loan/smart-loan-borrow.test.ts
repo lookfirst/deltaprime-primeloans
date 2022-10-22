@@ -144,7 +144,7 @@ describe('Smart loan', () => {
                     })
         });
 
-        it("should fail to borrow funds as without a collateral in place", async () => {
+        it("should fail to borrow funds without a collateral in place", async () => {
             await expect(wrappedLoan.borrow(toBytes32("MCKUSD"), 1)).to.be.revertedWith("The action may cause an account to become insolvent");
         });
 

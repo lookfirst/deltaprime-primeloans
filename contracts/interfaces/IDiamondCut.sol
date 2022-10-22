@@ -28,5 +28,9 @@ interface IDiamondCut {
         bytes calldata _calldata
     ) external;
 
+    function pause() external;
+
+    function unpause() external;
+
     event DiamondCut(FacetCut[] _diamondCut, address _init, bytes _calldata);
 }
