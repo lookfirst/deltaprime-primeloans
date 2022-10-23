@@ -5,7 +5,7 @@ contract MockSolvencyFacetConstantDebt {
     /**
     * Always returns 2137 - used in test suits
     **/
-    function getDebt() public view returns (uint256) {
+    function getDebt() public pure returns (uint256) {
         return 2137;
     }
 }

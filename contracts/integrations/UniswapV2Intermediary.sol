@@ -50,7 +50,7 @@ contract UniswapV2Intermediary is TokenListOwnableUpgreadable, IAssetsExchange, 
             require(_exactSold >= getMinimumTokensNeeded(_minimumBought, _soldToken, _boughtToken), "Not enough funds were provided");
         }
 
-        uint256[] memory amounts = router.swapExactTokensForTokens(_exactSold, _minimumBought, getPath(_soldToken, _boughtToken), msg.sender, block.timestamp);
+        amounts = router.swapExactTokensForTokens(_exactSold, _minimumBought, getPath(_soldToken, _boughtToken), msg.sender, block.timestamp);
 
         _soldToken.safeTransfer(msg.sender, IERC20Metadata(_soldToken).balanceOf(address(this)));
 

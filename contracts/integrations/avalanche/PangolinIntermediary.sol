@@ -12,7 +12,7 @@ import "../../lib/local/DeploymentConstants.sol";
  */
 contract PangolinIntermediary is UniswapV2Intermediary {
 
-    function getNativeTokenAddress() override internal view returns (address) {
+    function getNativeTokenAddress() override internal pure returns (address) {
         return DeploymentConstants.getNativeToken();
     }
 }

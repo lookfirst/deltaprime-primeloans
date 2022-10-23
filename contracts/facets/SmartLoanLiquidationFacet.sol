@@ -47,21 +47,21 @@ contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethods {
      * Returns max LTV (with the accuracy in a thousandth)
      * IMPORTANT: when changing, update other facets as well
      **/
-    function getMaxLtv() public view returns (uint256) {
+    function getMaxLtv() public pure returns (uint256) {
         return _MAX_LTV;
     }
 
     /**
       * Returns minimum acceptable LTV after liquidation
       **/
-    function getMinLtvAfterLiquidation() public view returns (uint256) {
+    function getMinLtvAfterLiquidation() public pure returns (uint256) {
         return _MIN_LTV_AFTER_LIQUIDATION;
     }
 
     /**
       * Returns maximum acceptable liquidation bonus (bonus is provided by a liquidator)
       **/
-    function getMaxLiquidationBonus() public view returns (uint256) {
+    function getMaxLiquidationBonus() public pure returns (uint256) {
         return _MAX_LIQUIDATION_BONUS;
     }
 
@@ -176,7 +176,6 @@ contract SmartLoanLiquidationFacet is ReentrancyGuardKeccak, SolvencyMethods {
             emit LiquidationRepay(msg.sender, config.assetsToRepay[i], repayAmount, block.timestamp);
         }
 
-        uint256 total = _getTotalValue();
         bytes32[] memory assetsOwned = DeploymentConstants.getAllOwnedAssets();
         uint256 bonus;
 

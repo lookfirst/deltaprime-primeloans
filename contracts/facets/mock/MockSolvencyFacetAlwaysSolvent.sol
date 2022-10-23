@@ -5,7 +5,7 @@ contract MockSolvencyFacetAlwaysSolvent {
     /**
     * Always returns true - used in test suits
     **/
-    function isSolvent() public view returns (bool) {
+    function isSolvent() public pure returns (bool) {
         return true;
     }
 }

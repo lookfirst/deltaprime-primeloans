@@ -77,7 +77,7 @@ contract VariableUtilisationRatesCalculatorChangedOffset is IRatesCalculator, Ow
      * @param totalLoans total value of loans
      * @param totalDeposits total value of deposits
      **/
-    function calculateBorrowingRate(uint256 totalLoans, uint256 totalDeposits) external view override returns (uint256) {
+    function calculateBorrowingRate(uint256 totalLoans, uint256 totalDeposits) external pure override returns (uint256) {
         if (totalDeposits == 0) return OFFSET_1;
 
         uint256 poolUtilisation = getPoolUtilisation(totalLoans, totalDeposits);

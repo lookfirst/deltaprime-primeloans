@@ -96,8 +96,6 @@ contract UniswapV2DEXFacet is ReentrancyGuardKeccak, SolvencyMethods {
 
         address lpTokenAddress = exchange.addLiquidity(address(tokenA), address(tokenB), amountADesired, amountBDesired, amountAMin, amountBMin);
 
-        TokenManager tokenManager = DeploymentConstants.getTokenManager();
-
         if (IERC20Metadata(lpTokenAddress).balanceOf(address(this)) > 0) {
             (bytes32 token0, bytes32 token1) = _firstAsset < _secondAsset ? (_firstAsset, _secondAsset) : (_secondAsset, _firstAsset);
             bytes32 lpToken = stringToBytes32(string.concat(
@@ -137,8 +135,6 @@ contract UniswapV2DEXFacet is ReentrancyGuardKeccak, SolvencyMethods {
         lpTokenAddress.safeTransfer(getExchangeIntermediaryContract(), liquidity);
 
         exchange.removeLiquidity(address(tokenA), address(tokenB), liquidity, amountAMin, amountBMin);
-
-        TokenManager tokenManager = DeploymentConstants.getTokenManager();
 
         // Remove asset from ownedAssets if the asset balance is 0 after the LP
         if (IERC20Metadata(lpTokenAddress).balanceOf(address(this)) == 0) {
