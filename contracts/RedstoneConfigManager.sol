@@ -10,6 +10,7 @@ contract RedstoneConfigManager is Ownable {
 
     constructor(address[] memory _trustedSigners) {
         for (uint256 i = 0; i < _trustedSigners.length; i++) {
+            require(!signerExists(_trustedSigners[i]), "Signer already exists");
             _addTrustedSigner(_trustedSigners[i]);
         }
     }
