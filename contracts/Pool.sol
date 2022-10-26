@@ -167,6 +167,7 @@ contract Pool is OwnableUpgradeable, ReentrancyGuardUpgradeable, IERC20 {
      * It updates user deposited balance, total deposited and rates
      **/
     function deposit(uint256 amount) public virtual nonReentrant {
+        require(amount>0, "Deposit amount must be > 0");
         _accumulateDepositInterest(msg.sender);
 
         _transferToPool(msg.sender, amount);
