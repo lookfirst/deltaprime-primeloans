@@ -81,8 +81,7 @@ describe('Test liquidator', () => {
                 {name: 'USDC', airdropList: []}
             ];
 
-            redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(TRUSTED_SIGNERS.signers)
-            );
+            redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(TRUSTED_SIGNERS.signers));
 
             await deployPools(poolNameAirdropList, tokenContracts, poolContracts, lendingPools, owner, depositor);
             tokensPrices = await getTokensPricesMap(assetsList, getRedstonePrices, []);
@@ -148,14 +147,8 @@ describe('Test liquidator', () => {
             loan = await ethers.getContractAt("SmartLoanGigaChadInterface", loan_proxy_address, borrower);
 
             wrappedLoan = WrapperBuilder
-                .mockLite(loan)
-                .using(
-                    () => {
-                        return {
-                            prices: MOCK_PRICES,
-                            timestamp: Date.now()
-                        }
-                    });
+                .wrapLite(loan)
+                .usingPriceFeed("redstone-avalanche-prod");
         });
 
 

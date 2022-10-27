@@ -193,8 +193,10 @@ export const deployPools = async function(
             tokenContract
         } = await deployAndInitializeLendingPool(owner, token.name, token.airdropList, chain);
         for (const user of token.airdropList) {
-            await tokenContract!.connect(user).approve(poolContract.address, toWei(depositAmount.toString()));
-            await poolContract.connect(user).deposit(toWei(depositAmount.toString()));
+            if (token.name == 'AVAX' || token.name == 'MCKUSD') {
+                await tokenContract!.connect(user).approve(poolContract.address, toWei(depositAmount.toString()));
+                await poolContract.connect(user).deposit(toWei(depositAmount.toString()));
+            }
         }
         lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
         tokenContracts.set(token.name, tokenContract);
