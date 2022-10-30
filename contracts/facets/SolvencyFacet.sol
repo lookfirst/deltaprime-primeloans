@@ -14,6 +14,7 @@ import "../interfaces/IStakingPositions.sol";
 
 //This path is updated during deployment
 import "../lib/local/DeploymentConstants.sol";
+import "hardhat/console.sol";
 
 contract SolvencyFacet is AvalancheDataServiceConsumerBase, DiamondHelper {
     /**
@@ -26,6 +27,8 @@ contract SolvencyFacet is AvalancheDataServiceConsumerBase, DiamondHelper {
     }
 
     function getPrices(bytes32[] memory symbols) external view returns (uint256[] memory) {
+        console.log('Req sign. threshold: %s', getUniqueSignersThreshold());
+        console.log('Obtaining [%s] symbols.', symbols.length);
         return getOracleNumericValuesFromTxMsg(symbols);
     }
 
