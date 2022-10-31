@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /******************************************************************************\
 * Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
@@ -42,7 +42,8 @@ library DiamondStorageLib {
         // Used to implement ERC-165.
         mapping(bytes4 => bool) supportedInterfaces;
 
-
+        bool _initialized;
+        bool _active;
     }
 
     struct SmartLoanStorage {
@@ -138,6 +139,8 @@ library DiamondStorageLib {
     }
 
     function addOwnedAsset(bytes32 _symbol, address _address) internal {
+        require(_symbol != "", "Symbol cannot be empty");
+        require(_address != address(0), "Invalid AddressZero");
         SmartLoanStorage storage sls = smartLoanStorage();
         EnumerableMap.set(sls.ownedAssets, _symbol, _address);
     }

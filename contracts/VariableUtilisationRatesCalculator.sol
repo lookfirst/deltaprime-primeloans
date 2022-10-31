@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: 48991ca286a107aedf142ae9fd21b421b08f5025;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IRatesCalculator.sol";
@@ -78,7 +78,7 @@ contract VariableUtilisationRatesCalculator is IRatesCalculator, Ownable {
      * @dev _totalLoans total value of loans
      * @dev _totalDeposits total value of deposits
      **/
-    function calculateBorrowingRate(uint256 totalLoans, uint256 totalDeposits) external view override returns (uint256) {
+    function calculateBorrowingRate(uint256 totalLoans, uint256 totalDeposits) external pure override returns (uint256) {
         if (totalDeposits == 0) return OFFSET_1;
 
         uint256 poolUtilisation = getPoolUtilisation(totalLoans, totalDeposits);
@@ -104,5 +104,20 @@ contract VariableUtilisationRatesCalculator is IRatesCalculator, Ownable {
     function setSpread(uint256 _spread) external onlyOwner {
         require(_spread < 1e18, "Spread must be smaller than 1e18");
         spread = _spread;
+        emit SpreadChanged(msg.sender, _spread, block.timestamp);
     }
+
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override {}
+
+    /* ========== EVENTS ========== */
+
+    /**
+     * @dev emitted after changing the spread
+     * @param performer an address of wallet setting a new spread
+     * @param newSpread new spread
+     * @param timestamp time of a spread change
+     **/
+    event SpreadChanged(address indexed performer, uint256 newSpread, uint256 timestamp);
 }

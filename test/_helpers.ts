@@ -1,5 +1,5 @@
 import {ethers, network, waffle} from "hardhat";
-import {BigNumber, Contract} from "ethers";
+import {BigNumber, Contract, Wallet} from "ethers";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {
     CompoundingIndex,
@@ -18,6 +18,8 @@ import MockTokenArtifact from "../artifacts/contracts/mock/MockToken.sol/MockTok
 
 import {execSync} from "child_process";
 import updateConstants from "../tools/scripts/update-constants"
+import redstone from "redstone-api";
+import {JsonRpcSigner} from "@ethersproject/providers";
 
 const {provider} = waffle;
 const {deployFacet} = require('../tools/diamond/deploy-diamond');
@@ -35,6 +37,19 @@ const wavaxAbi = [
     'function deposit() public payable',
     ...erc20ABI
 ]
+
+interface PoolInitializationObject {
+    name: string,
+    airdropList: Array<SignerWithAddress>
+}
+
+interface MockTokenPriceObject {
+    symbol: string,
+    value: number
+}
+
+export {PoolInitializationObject, MockTokenPriceObject};
+
 
 export const toWei = ethers.utils.parseUnits;
 export const formatUnits = (val: BigNumber, decimalPlaces: BigNumber) => parseFloat(ethers.utils.formatUnits(val, decimalPlaces));
@@ -68,17 +83,6 @@ export const time = {
         }
     }
 }
-
-export const getSelloutRepayAmount = async function (
-    totalValue: number,
-    debt: number,
-    bonus: number,
-    targetLTV: number) {
-
-    targetLTV = targetLTV / 1000;
-    bonus = bonus / 1000;
-    return (targetLTV * (totalValue - debt) - debt) / (targetLTV * bonus - 1) * 1.04;
-};
 
 export const toRepay = function (
     action: string,
@@ -119,30 +123,191 @@ export const calculateBonus = function (
     }
 }
 
-//simple model: we iterate over pools and repay their debts based on how much is left to repay in USD
-export const getRepayAmounts = function (
+export const getLiquidationAmounts = function (
     action: string,
-    debts: any,
-    toRepayInUsd: number,
-    mockPrices: any
+    debts: Debt[],
+    assets: AssetBalanceLeverage[],
+    prices: any,
+    finalHealthRatio: number,
+    //TODO: bonus in edge scenarios
+    bonus: number,
+    loanIsBankrupt: boolean
 ) {
-    let repayAmounts: any = {};
+    return loanIsBankrupt ?
+        getHealingLiquidationAmounts(action, debts)
+        :
+        getProfitableLiquidationAmounts(action, debts, assets, prices, finalHealthRatio, bonus);
+}
 
-    let leftToRepayInUsd = toRepayInUsd;
+export const getHealingLiquidationAmounts = function (
+    action: string,
+    debts: Debt[]
+) {
+    let repayAmounts: any = [];
+    let deliveredAmounts: any = [];
 
-    for (const [asset, debt] of Object.entries(debts)) {
-        if (action === 'HEAL' || action === 'CLOSE') {
-            repayAmounts[asset] = Number(debt) * 1.00001;
-        } else {
-            let availableToRepayInUsd = Number(debt) * mockPrices[asset];
-            let repaidToPool = Math.min(availableToRepayInUsd, leftToRepayInUsd);
-            leftToRepayInUsd -= repaidToPool;
-            repayAmounts[asset] = repaidToPool / mockPrices[asset];
+    debts.forEach(debt => {
+        repayAmounts.push(new Repayment(debt.name, 1.001 * debt.debt));
+        deliveredAmounts.push(new Allowance(debt.name, 1.001 * debt.debt));
+    });
+
+    return {repayAmounts, deliveredAmounts}
+}
+
+//simple model: we iterate over pools and repay their debts based on how much is left to repay in USD
+export const getProfitableLiquidationAmounts = function (
+    action: string,
+    debts: Debt[],
+    assets: AssetBalanceLeverage[],
+    prices: any,
+    finalHealthRatio: number,
+    //TODO: bonus in edge scenarios
+    bonus: number
+) {
+    let repayAmounts = [];
+    let deliveredAmounts: any = [];
+    let converged = false;
+
+    // loop with repaying solely with account balance
+    for (let debt of debts) {
+        //repaying with account balance
+        let asset = assets.find(el => el.name == debt.name)!;
+        let repayAmount = 0;
+        let initialDebt = debt.debt;
+        let initialBalance = asset.balance;
+
+        let price = prices.find((y: any) => y.symbol == asset.name)!.value;
+
+        let ratio = calculateHealthRatio(debts, assets, prices);
+
+        let sign = 1;
+        let repayChange = Math.min(asset.balance, debt.debt);
+
+        repayAmount = 0;
+        let useAllAmount = false;
+        let i = 0;
+
+        while (repayChange != 0 && !converged && !useAllAmount && i <12) {
+            repayAmount += repayChange;
+            debt.debt = initialDebt - repayAmount;
+            asset.balance = initialBalance - repayAmount;
+
+            let repaidInUsd = repayAmount * price + repayAmounts.reduce((x, y) => x + y.amount * prices.find((z: any) => y.name == z.symbol)!.value, 0);
+            let bonusAmount = bonus * repaidInUsd;
+            let updatedAssets: AssetBalanceLeverage[]  = JSON.parse(JSON.stringify(assets));
+            let assetsValue = updatedAssets.reduce((x, y) =>  x + y.balance * prices.find((z: any) => y.name == z.symbol)!.value, 0);
+            let partToRepayToLiquidator = bonusAmount / assetsValue;
+
+
+            updatedAssets.forEach(asset => asset.balance *= (1 - partToRepayToLiquidator));
+
+            ratio = calculateHealthRatio(debts, updatedAssets, prices);
+
+            // if ratio is higher than desired, we decrease the repayAmount
+            sign = (ratio > finalHealthRatio || debt.debt == 0) ? -1 : 1;
+
+            repayChange = sign * Math.abs(repayChange) / 2;
+
+            if (i == 0 && ratio < finalHealthRatio) {
+                useAllAmount = true;
+            }
+
+            if (Math.abs(finalHealthRatio - ratio) < 0.0001) {
+                converged = true;
+            }
+            i++;
+        }
+
+        repayAmounts.push(new Repayment(debt.name, repayAmount));
+    }
+
+    // loop with delivering tokens
+    for (let debt of debts) {
+        if (!converged) {
+            //repaying with added tokens balance
+        let asset = assets.find(el => el.name == debt.name)!;
+        let initialRepayAmount: number = repayAmounts.find(el => el.name == debt.name)!.amount;
+        let deliveredAmount = 0;
+        let initialDebt = debt.debt;
+
+        let changeInDeliveredAmount = initialDebt;
+
+        let price = prices.find((y: any) => y.symbol == asset.name)!.value;
+        let useAllAmount = false;
+        let ratio = calculateHealthRatio(debts, assets, prices);
+        let sign = 1;
+
+        let i = 0;
+        while (changeInDeliveredAmount != 0 && !converged && !useAllAmount) {
+            deliveredAmount += changeInDeliveredAmount;
+            debt.debt = initialDebt - deliveredAmount;
+
+            let repaidInUsd = deliveredAmount * price + repayAmounts.reduce((x, y) =>
+             x + y.amount * prices.find((z: any) => y.name == z.symbol)!.value, 0);
+            let bonusAmount = bonus * repaidInUsd;
+
+            let deliveredInUsd = deliveredAmount * price + deliveredAmounts.reduce((x: number, y: any) =>
+                x + y.amount * prices.find((z: any) => y.name == z.symbol)!.value, 0);
+
+            let updatedAssets: AssetBalanceLeverage[] = JSON.parse(JSON.stringify(assets));
+            let assetsValue = updatedAssets.reduce((x, y) => x + y.balance * prices.find((z: any) => y.name == z.symbol)!.value, 0);
+
+            let partToRepayToLiquidator = Math.min((deliveredInUsd + bonusAmount) / assetsValue, 1);
+
+            updatedAssets.forEach(asset => asset.balance *= (1 - partToRepayToLiquidator));
+
+            ratio = calculateHealthRatio(debts, updatedAssets, prices);
+
+            // if ratio is higher than desired, we decrease the repayAmount
+            sign = (ratio > finalHealthRatio) ? -1 : 1;
+            changeInDeliveredAmount = sign * Math.abs(changeInDeliveredAmount) / 2;
+
+            if (i == 0 && ratio != 0 && ratio < finalHealthRatio) {
+                useAllAmount = true;
+            }
+
+            if (Math.abs(finalHealthRatio - ratio) < 0.0001) {
+                converged = true;
+            }
+
+            i++;
+        }
+
+            //IMPORTANT:
+            //approve a little more to account for the debt compounding
+            let delivered = deliveredAmount; // to account for inaccuracies and debt compounding
+            deliveredAmounts.push(new Allowance(debt.name, delivered));
+            let repayment = repayAmounts.find(el => el.name == debt.name)!;
+            repayment.amount = deliveredAmount + initialRepayAmount;
         }
     }
 
-    //repayAmounts are measured in appropriate tokens (not USD)
-    return repayAmounts;
+    return {repayAmounts, deliveredAmounts};
+}
+
+export const calculateHealthRatio = function (
+    debts: Debt[],
+    assets: AssetBalanceLeverage[],
+    prices: any[]
+) {
+    let debt = 0;
+    debts.forEach(
+        asset => {
+            let price: number = prices.find(el => el.symbol == asset.name)!.value;
+
+            debt += asset.debt * price;
+        }
+    );
+
+    let maxDebt = 0;
+    assets.forEach(
+        asset => {
+            let price: number = prices.find(el => el.symbol == asset.name)!.value;
+            maxDebt += asset.balance * asset.maxLeverage * price;
+        }
+    );
+
+    return debt == 0 ? Infinity : maxDebt / debt;
 }
 
 export const toSupply = function (
@@ -160,6 +325,68 @@ export const toSupply = function (
     return toSupply;
 }
 
+export const deployPools = async function(
+   smartLoansFactory: Contract,
+   tokens: Array<PoolInitializationObject>,
+   tokenContracts: Map<string, Contract>,
+   poolContracts: Map<string, Contract>,
+   lendingPools: Array<PoolAsset>,
+   owner: SignerWithAddress | JsonRpcSigner,
+   depositor: SignerWithAddress | Wallet,
+   depositAmount: number = 2000,
+   chain: string = 'AVAX'
+) {
+    for (const token of tokens) {
+        let {
+            poolContract,
+            tokenContract
+        } = await deployAndInitializeLendingPool(owner, token.name, smartLoansFactory.address, token.airdropList, chain);
+        for (const user of token.airdropList) {
+            if (token.name == 'AVAX' || token.name == 'MCKUSD') {
+                await tokenContract!.connect(user).approve(poolContract.address, toWei(depositAmount.toString()));
+                await poolContract.connect(user).deposit(toWei(depositAmount.toString()));
+            }
+        }
+        lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
+        tokenContracts.set(token.name, tokenContract);
+        poolContracts.set(token.name, poolContract);
+    }
+}
+
+function zip(arrays: any) {
+    return arrays[0].map(function(_: any,i: any){
+        return arrays.map(function(array: any){return array[i]})
+    });
+}
+
+export const getRedstonePrices = async function(tokenSymbols: Array<string>, priceProvider: string = "redstone-avalanche-prod-1"): Promise<Array<number>> {
+    return await Promise.all(tokenSymbols.map(async (tokenSymbol: string) => (await redstone.getPrice(tokenSymbol, {provider: priceProvider})).value));
+}
+
+export const getTokensPricesMap = async function(tokenSymbols: Array<string>, priceProviderFunc: Function, additionalMockTokensPrices: Array<MockTokenPriceObject> = [], resultMap: Map<string, number> = new Map()): Promise<Map<string, number>> {
+    for (const [tokenSymbol, tokenPrice] of zip([tokenSymbols, await priceProviderFunc(tokenSymbols)])) {
+        resultMap.set(tokenSymbol, tokenPrice);
+    }
+    if(additionalMockTokensPrices.length > 0) {
+        additionalMockTokensPrices.forEach(obj => (resultMap.set(obj.symbol, obj.value)));
+    }
+    return resultMap
+}
+
+export const convertTokenPricesMapToMockPrices = function(tokensPrices: Map<string, number>) {
+    return Array.from(tokensPrices).map( ([token, price]) => ({dataFeedId: token, value: price}));
+}
+
+export const convertAssetsListToSupportedAssets = function(assetsList: Array<string>, customTokensAddresses: any = [], chain = 'AVAX') {
+    const tokenAddresses = chain === 'AVAX' ? AVAX_TOKEN_ADDRESSES : CELO_TOKEN_ADDRESSES
+    return assetsList.map(asset => {
+        // @ts-ignore
+        return new Asset(toBytes32(asset), tokenAddresses[asset] === undefined ? customTokensAddresses[asset] : tokenAddresses[asset]);
+    });
+}
+
+
+
 export const getFixedGasSigners = async function (gasLimit: number) {
     const signers: SignerWithAddress[] = await ethers.getSigners();
     signers.forEach(signer => {
@@ -174,6 +401,9 @@ export const getFixedGasSigners = async function (gasLimit: number) {
 
 
 export const deployAllFacets = async function (diamondAddress: any, chain = 'AVAX') {
+    const diamondCut = await ethers.getContractAt('IDiamondCut', diamondAddress);
+    console.log('Pausing')
+    await diamondCut.pause();
     await deployFacet(
         "OwnershipFacet",
         diamondAddress,
@@ -196,21 +426,20 @@ export const deployAllFacets = async function (diamondAddress: any, chain = 'AVA
         ''
     )
     await deployFacet("SolvencyFacet", diamondAddress, [
-        'getLTV',
+        'getDebt',
+        'getTotalAssetsValue',
+        'getThresholdWeightedValue',
+        'getStakedValue',
         'getTotalValue',
         'getFullLoanStatus',
-        'getMaxLtv',
-        'getStakedValue',
-        'getTotalAssetsValue',
-        'getDebt',
-        'isSolvent',
-        'getMaxBlockTimestampDelay'
+        'getHealthRatio'
     ])
     if (chain == 'AVAX') {
         await deployFacet("SmartLoanWrappedNativeTokenFacet", diamondAddress, ['depositNativeToken', 'wrapNativeToken', 'unwrapAndWithdraw'])
         await deployFacet("PangolinDEXFacet", diamondAddress, ['swapPangolin', 'addLiquidityPangolin', 'removeLiquidityPangolin'])
         await deployFacet("TraderJoeDEXFacet", diamondAddress, ['swapTraderJoe', 'addLiquidityTraderJoe', 'removeLiquidityTraderJoe'])
         await deployFacet("YieldYakFacet", diamondAddress, ['stakeAVAXYak', 'stakeSAVAXYak' ,'unstakeAVAXYak', 'unstakeSAVAXYak', 'stakeTJAVAXUSDCYak', 'unstakeTJAVAXUSDCYak'])
+        await deployFacet("BeefyFinanceAvalancheFacet", diamondAddress, ['stakePngUsdcAvaxLpBeefy', 'stakePngUsdceAvaxLpBeefy' ,'stakeTjUsdcAvaxLpBeefy', 'unstakePngUsdcAvaxLpBeefy', 'unstakePngUsdceAvaxLpBeefy', 'unstakeTjUsdcAvaxLpBeefy'])
         await deployFacet("VectorFinanceFacet", diamondAddress, [
                 'vectorStakeUSDC1',
                 'vectorUnstakeUSDC1',
@@ -251,8 +480,13 @@ export const deployAllFacets = async function (diamondAddress: any, chain = 'AVA
             'getBalance',
             'getSupportedTokensAddresses',
             'getAllOwnedAssets',
+            'getContractOwner',
+            'getProposedOwner',
+            'getStakedPositions',
         ]
     )
+    await diamondCut.unpause();
+    console.log('Unpaused')
 };
 
 export const extractAssetNameBalances = async function (
@@ -278,15 +512,29 @@ export const extractAssetNamePrices = async function (
 }
 
 
+function getMissingTokenContracts(assetsList: Array<string>, tokenContracts: Map<string, Contract>) {
+    return assetsList.filter(asset => !Array.from(tokenContracts.keys()).includes(asset))
+}
+
+
+export const addMissingTokenContracts = function (tokensContract: Map<string, Contract>, assetsList: Array<string>, chain: string = 'AVAX') {
+    let missingTokens: Array<string> = getMissingTokenContracts(assetsList, tokensContract);
+    const tokenAddresses = chain === 'AVAX' ? AVAX_TOKEN_ADDRESSES : CELO_TOKEN_ADDRESSES
+    for (const missingToken of missingTokens) {
+        // @ts-ignore
+        tokensContract.set(missingToken, new ethers.Contract(tokenAddresses[missingToken] , wavaxAbi, provider));
+    }
+}
+
 export const deployAndInitExchangeContract = async function (
-    owner: SignerWithAddress,
+    owner: SignerWithAddress | JsonRpcSigner,
     routerAddress: string,
-    supportedAssets: string[],
+    supportedAssets: Array<Asset>,
     name: string
 ) {
     let exchangeFactory = await ethers.getContractFactory(name);
     const exchange = (await exchangeFactory.deploy()).connect(owner);
-    await exchange.initialize(routerAddress, supportedAssets);
+    await exchange.initialize(routerAddress, supportedAssets.map(asset => asset.assetAddress));
     return exchange
 };
 
@@ -316,7 +564,7 @@ export async function syncTime() {
     }
 }
 
-export async function deployAndInitializeLendingPool(owner: any, tokenName: string, tokenAirdropList: any, chain = 'AVAX') {
+export async function deployAndInitializeLendingPool(owner: any, tokenName: string, smartLoansFactoryAddress: string, tokenAirdropList: any, chain = 'AVAX', rewarder: string = '') {
 
     const variableUtilisationRatesCalculator = (await deployContract(owner, VariableUtilisationRatesCalculatorArtifact)) as VariableUtilisationRatesCalculator;
     let pool = (await deployContract(owner, PoolArtifact)) as Pool;
@@ -325,7 +573,7 @@ export async function deployAndInitializeLendingPool(owner: any, tokenName: stri
         switch (tokenName) {
             case 'MCKUSD':
                 //it's a mock implementation of USD token with 18 decimal places
-                tokenContract = (await deployContract(owner, MockTokenArtifact, [tokenAirdropList])) as MockToken;
+                tokenContract = (await deployContract(owner, MockTokenArtifact, [tokenAirdropList.map((user: SignerWithAddress) => user.address)])) as MockToken;
                 break;
             case 'AVAX':
                 tokenContract = new ethers.Contract(AVAX_TOKEN_ADDRESSES['AVAX'], wavaxAbi, provider);
@@ -358,35 +606,39 @@ export async function deployAndInitializeLendingPool(owner: any, tokenName: stri
         }
     }
 
-    const borrowersRegistry = await (new OpenBorrowersRegistry__factory(owner).deploy());
+    rewarder = rewarder !== '' ? rewarder : ethers.constants.AddressZero;
+
     const depositIndex = (await deployContract(owner, CompoundingIndexArtifact, [pool.address])) as CompoundingIndex;
     const borrowingIndex = (await deployContract(owner, CompoundingIndexArtifact, [pool.address])) as CompoundingIndex;
     await pool.initialize(
         variableUtilisationRatesCalculator.address,
-        borrowersRegistry.address,
+        smartLoansFactoryAddress,
         depositIndex.address,
         borrowingIndex.address,
-        tokenContract!.address
+        tokenContract!.address,
+        rewarder
     );
     return {'poolContract': pool, 'tokenContract': tokenContract}
 }
 
-export async function recompileConstantsFile(chain: string, contractName: string, exchanges: Array<{ facetPath: string, contractAddress: string }>, tokenManagerAddress: string, redstoneConfigManagerAddress: string, diamondBeaconAddress: string, smartLoansFactoryAddress: string, subpath: string, maxLTV: number = 5000, minSelloutLTV: number = 4000, maxLiquidationBonus: number = 100, nativeAssetSymbol: string = 'AVAX') {
+export async function recompileConstantsFile(chain: string, contractName: string, exchanges: Array<{ facetPath: string, contractAddress: string }>, tokenManagerAddress: string, redstoneConfigManagerAddress: string, diamondBeaconAddress: string, smartLoansFactoryAddress: string, subpath: string, maxLTV: number = 5000, minSelloutLTV: string = "1.042e18", maxLiquidationBonus: number = 100, nativeAssetSymbol: string = 'AVAX') {
     const subPath = subpath ? subpath + '/' : "";
     const artifactsDirectory = `../artifacts/contracts/${subPath}/${chain}/${contractName}.sol/${contractName}.json`;
     delete require.cache[require.resolve(artifactsDirectory)]
     await updateConstants(chain, exchanges, tokenManagerAddress, redstoneConfigManagerAddress, diamondBeaconAddress, smartLoansFactoryAddress, maxLTV, minSelloutLTV, maxLiquidationBonus, nativeAssetSymbol);
-    execSync(`npx hardhat compile`, {encoding: 'utf-8'});
+    execSync(`npx hardhat compile`, {encoding: 'utf-8', stdio: "ignore"});
     return require(artifactsDirectory);
 }
 
 export class Asset {
     asset: string;
     assetAddress: string;
+    maxLeverage: BigNumber;
 
-    constructor(asset: string, assetAddress: string) {
+    constructor(asset: string, assetAddress: string, maxLeverage: number = 0.8333333333333333) {
         this.asset = asset;
         this.assetAddress = assetAddress;
+        this.maxLeverage = toWei(maxLeverage.toString());
     }
 }
 
@@ -420,6 +672,36 @@ export class AssetNameDebt {
     }
 }
 
+export class Debt {
+    name: string;
+    debt: number;
+
+    constructor(name: string, debt: number) {
+        this.name = name;
+        this.debt = debt;
+    }
+}
+
+export class Repayment {
+    name: string;
+    amount: number;
+
+    constructor(name: string, amount: number) {
+        this.name = name;
+        this.amount = amount;
+    }
+}
+
+export class Allowance {
+    name: string;
+    amount: number;
+
+    constructor(name: string, amount: number) {
+        this.name = name;
+        this.amount = amount;
+    }
+}
+
 export class PoolAsset {
     asset: string;
     poolAddress: string;
@@ -427,5 +709,31 @@ export class PoolAsset {
     constructor(asset: string, poolAddress: string) {
         this.asset = asset;
         this.poolAddress = poolAddress;
+    }
+}
+
+export class AssetBalanceLeverage {
+    name: string;
+    balance: number;
+    maxLeverage: number
+
+    constructor(name: string, balance: number, maxLeverage: number = 0.8333333333333333) {
+        this.name = name;
+        this.balance = balance;
+        this.maxLeverage = maxLeverage;
+    }
+}
+
+export class StakedPosition {
+    vault: string;
+    symbol: string;
+    balanceSelector: string;
+    unstakeSelector: string;
+
+    constructor(vault: string, symbol: string, balanceSelector: string, unstakeSelector: string) {
+        this.vault = vault;
+        this.symbol = symbol;
+        this.balanceSelector = balanceSelector;
+        this.unstakeSelector = unstakeSelector;
     }
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "../ReentrancyGuardKeccak.sol";
 import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
@@ -115,6 +115,18 @@ contract SmartLoanViewFacet is ReentrancyGuardKeccak, SolvencyMethods {
             });
         }
         return result;
+    }
+
+    function getContractOwner() external view returns (address _owner) {
+        _owner = DiamondStorageLib.contractOwner();
+    }
+
+    function getProposedOwner() external view returns (address _proposed) {
+        _proposed = DiamondStorageLib.proposedOwner();
+    }
+
+    function getStakedPositions() external view returns (IStakingPositions.StakedPosition[] memory  _positions) {
+        _positions = DiamondStorageLib.stakedPositions();
     }
 
     /* ========== MODIFIERS ========== */

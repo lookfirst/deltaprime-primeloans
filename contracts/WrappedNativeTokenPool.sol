@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: c5c938a0524b45376dd482cd5c8fb83fa94c2fcc;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "./Pool.sol";
 import "./interfaces/IWrappedNativeToken.sol";
@@ -36,7 +36,7 @@ contract WrappedNativeTokenPool is Pool {
      * @dev _amount the amount to be withdrawn
      **/
     function withdrawNativeToken(uint256 _amount) external nonReentrant {
-        require(IERC20(tokenAddress).balanceOf(address(this)) >= _amount, "There is not enough available funds in the pool to withdraw");
+        require(IERC20(tokenAddress).balanceOf(address(this)) >= _amount, "Not enough funds in the pool to withdraw");
 
         _accumulateDepositInterest(msg.sender);
 

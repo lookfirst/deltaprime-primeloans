@@ -1,7 +1,6 @@
 import {ethers, waffle} from 'hardhat'
 import chai, {expect} from 'chai'
 import {solidity} from "ethereum-waffle";
-import redstone from 'redstone-api';
 
 import TokenManagerArtifact from '../../../artifacts/contracts/TokenManager.sol/TokenManager.json';
 import MockBorrowAccessNFTArtifact
@@ -10,20 +9,23 @@ import MockBorrowAccessNFTArtifact
 import SmartLoansFactoryWithAccessNFTArtifact
     from '../../../artifacts/contracts/upgraded/SmartLoansFactoryWithAccessNFT.sol/SmartLoansFactoryWithAccessNFT.json';
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
-import TOKEN_ADDRESSES from '../../../common/addresses/avax/token_addresses.json';
 import {
+    addMissingTokenContracts,
     Asset,
+    convertAssetsListToSupportedAssets,
+    convertTokenPricesMapToMockPrices,
     deployAllFacets,
-    deployAndInitializeLendingPool,
+    deployPools,
     fromWei,
     getFixedGasSigners,
+    getRedstonePrices,
+    getTokensPricesMap,
     PoolAsset,
+    PoolInitializationObject,
     recompileConstantsFile,
-    toBytes32,
-    toWei,
 } from "../../_helpers";
 import {syncTime} from "../../_syncTime"
-import {WrapperBuilder} from "redstone-evm-connector";
+import {WrapperBuilder} from "@redstone-finance/evm-connector";
 import {
     MockBorrowAccessNFT,
     RedstoneConfigManager__factory,
@@ -39,17 +41,6 @@ chai.use(solidity);
 const {deployContract, provider} = waffle;
 const ZERO = ethers.constants.AddressZero;
 
-const erc20ABI = [
-    'function decimals() public view returns (uint8)',
-    'function balanceOf(address _owner) public view returns (uint256 balance)',
-    'function approve(address _spender, uint256 _value) public returns (bool success)',
-    'function allowance(address owner, address spender) public view returns (uint256)'
-]
-
-const wavaxAbi = [
-    'function deposit() public payable',
-    ...erc20ABI
-]
 describe('Smart loan', () => {
     before("Synchronize blockchain time", async () => {
         await syncTime();
@@ -60,36 +51,38 @@ describe('Smart loan', () => {
             depositor: SignerWithAddress,
             loan: SmartLoanGigaChadInterface,
             wrappedLoan: any,
-            tokenContracts: any = {},
+            smartLoansFactory: SmartLoansFactoryWithAccessNFT,
             nftContract: Contract,
             MOCK_PRICES: any,
-            AVAX_PRICE: number,
-            smartLoansFactory: SmartLoansFactoryWithAccessNFT;
+            poolContracts: Map<string, Contract> = new Map(),
+            tokenContracts: Map<string, Contract> = new Map(),
+            lendingPools: Array<PoolAsset> = [],
+            supportedAssets: Array<Asset>,
+            tokensPrices: Map<string, number>;
+
 
         before("deploy provider, exchange and pool", async () => {
+            let assetsList = ['AVAX'];
             [owner, depositor] = await getFixedGasSigners(10000000);
+            let poolNameAirdropList: Array<PoolInitializationObject> = [
+                {name: 'AVAX', airdropList: [depositor]},
+            ];
 
             let redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(["0xFE71e9691B9524BC932C23d0EeD5c9CE41161884"]));
 
+            let diamondAddress = await deployDiamond();
+
             nftContract = (await deployContract(owner, MockBorrowAccessNFTArtifact)) as MockBorrowAccessNFT;
 
-            let lendingPools = [];
-            for (const token of [
-                {'name': 'AVAX', 'airdropList': [depositor]}
-            ]) {
-                let {
-                    poolContract,
-                    tokenContract
-                } = await deployAndInitializeLendingPool(owner, token.name, token.airdropList);
-                await tokenContract!.connect(depositor).approve(poolContract.address, toWei("1000"));
-                await poolContract.connect(depositor).deposit(toWei("1000"));
-                lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
-                tokenContracts[token.name] = tokenContract;
-            }
+            smartLoansFactory = await deployContract(owner, SmartLoansFactoryWithAccessNFTArtifact) as SmartLoansFactoryWithAccessNFT;
+            await smartLoansFactory.initialize(diamondAddress);
+            await smartLoansFactory.connect(owner).setAccessNFT(nftContract.address);
 
-            let supportedAssets = [
-                new Asset(toBytes32('AVAX'), TOKEN_ADDRESSES['AVAX']),
-            ]
+            await deployPools(smartLoansFactory, poolNameAirdropList, tokenContracts, poolContracts, lendingPools, owner, depositor);
+            tokensPrices = await getTokensPricesMap(assetsList, getRedstonePrices, []);
+            MOCK_PRICES = convertTokenPricesMapToMockPrices(tokensPrices);
+            supportedAssets = convertAssetsListToSupportedAssets(assetsList);
+            addMissingTokenContracts(tokenContracts, assetsList);
 
             let tokenManager = await deployContract(
                 owner,
@@ -99,13 +92,6 @@ describe('Smart loan', () => {
                     lendingPools
                 ]
             ) as TokenManager;
-
-            let diamondAddress = await deployDiamond();
-
-
-            smartLoansFactory = await deployContract(owner, SmartLoansFactoryWithAccessNFTArtifact) as SmartLoansFactoryWithAccessNFT;
-            await smartLoansFactory.initialize(diamondAddress);
-            await smartLoansFactory.connect(owner).setAccessNFT(nftContract.address);
 
             await recompileConstantsFile(
                 'local',
@@ -135,40 +121,29 @@ describe('Smart loan', () => {
         });
 
         it("should create a loan with the access NFT", async () => {
-            AVAX_PRICE = (await redstone.getPrice('AVAX')).value;
-
-            MOCK_PRICES = [
-                {
-                    symbol: 'AVAX',
-                    value: AVAX_PRICE
-                },
-            ];
             const wrappedSmartLoansFactory = WrapperBuilder
-                .mockLite(smartLoansFactory.connect(depositor))
-                .using(
-                    () => {
-                        return {
-                            prices: MOCK_PRICES,
-                            timestamp: Date.now()
-                        }
-                    })
+                // @ts-ignore
+                .wrap(smartLoansFactory.connect(depositor))
+                .usingSimpleNumericMock({
+                    mockSignersCount: 10,
+                    dataPoints: MOCK_PRICES,
+                });
 
             await wrappedSmartLoansFactory.createLoan();
 
+            // @ts-ignore
             await wrappedSmartLoansFactory.connect(owner).createLoan();
 
             const loanAddress = await smartLoansFactory.getLoanForOwner(owner.address);
             loan = await ethers.getContractAt("SmartLoanGigaChadInterface", loanAddress, owner);
 
             wrappedLoan = WrapperBuilder
-                .mockLite(loan)
-                .using(
-                    () => {
-                        return {
-                            prices: MOCK_PRICES,
-                            timestamp: Date.now()
-                        }
-                    })
+                // @ts-ignore
+                .wrap(loan)
+                .usingSimpleNumericMock({
+                    mockSignersCount: 10,
+                    dataPoints: MOCK_PRICES,
+                });
 
             expect(loan).to.be.not.equal(ZERO);
             expect(fromWei(await wrappedLoan.getTotalValue())).to.be.equal(0);

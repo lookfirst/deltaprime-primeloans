@@ -8,11 +8,12 @@ import SmartLoanGigaChadInterfaceArtifact from '../../../artifacts/contracts/int
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import TOKEN_ADDRESSES from '../../../common/addresses/avax/token_addresses.json';
 import {
-    Asset,
+    addMissingTokenContracts,
+    Asset, convertAssetsListToSupportedAssets, convertTokenPricesMapToMockPrices,
     deployAllFacets,
-    deployAndInitializeLendingPool,
-    getFixedGasSigners,
-    PoolAsset,
+    deployAndInitializeLendingPool, deployPools,
+    getFixedGasSigners, getRedstonePrices, getTokensPricesMap,
+    PoolAsset, PoolInitializationObject,
     recompileConstantsFile,
     toBytes32,
     toWei,
@@ -40,7 +41,6 @@ describe('Smart loan', () => {
     describe('Test ownership transfer flow', () => {
         let smartLoansFactory: SmartLoansFactory,
             loan: Contract,
-            tokenContracts: any = {},
             owner1: SignerWithAddress,
             owner2: SignerWithAddress,
             owner3: SignerWithAddress,
@@ -49,32 +49,27 @@ describe('Smart loan', () => {
             owner6: SignerWithAddress,
             badGuy: SignerWithAddress,
             depositor: SignerWithAddress,
-            diamondAddress: any;
+            diamondAddress: any,
+            poolContracts: Map<string, Contract> = new Map(),
+            tokenContracts: Map<string, Contract> = new Map(),
+            lendingPools: Array<PoolAsset> = [],
+            supportedAssets: Array<Asset>;
 
         before("deploy factory and pool", async () => {
             [owner1, owner2, owner3, owner4, owner5, owner6, badGuy, depositor] = await getFixedGasSigners(10000000);
-
+            let assetsList = ['AVAX'];
+            let poolNameAirdropList: Array<PoolInitializationObject> = [
+                {name: 'AVAX', airdropList: [depositor]},
+            ];
             let redstoneConfigManager = await (new RedstoneConfigManager__factory(owner1).deploy(["0xFE71e9691B9524BC932C23d0EeD5c9CE41161884"]));
 
-            let lendingPools = [];
-            for (const token of [
-                {'name': 'AVAX', 'airdropList': [depositor]}
-            ]) {
-                let {
-                    poolContract,
-                    tokenContract
-                } = await deployAndInitializeLendingPool(owner1, token.name, token.airdropList);
-                await tokenContract!.connect(depositor).approve(poolContract.address, toWei("1000"));
-                await poolContract.connect(depositor).deposit(toWei("1000"));
-                lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
-                tokenContracts[token.name] = tokenContract;
-            }
+            diamondAddress = await deployDiamond();
 
-            let supportedAssets = [
-                new Asset(toBytes32('AVAX'), TOKEN_ADDRESSES['AVAX']),
-                new Asset(toBytes32('USDC'), TOKEN_ADDRESSES['USDC']),
-                new Asset(toBytes32('YYAV3SA1'), TOKEN_ADDRESSES['YYAV3SA1']),
-            ]
+            smartLoansFactory = await deployContract(owner1, SmartLoansFactoryArtifact) as SmartLoansFactory;
+            await smartLoansFactory.initialize(diamondAddress);
+
+            await deployPools(smartLoansFactory, poolNameAirdropList, tokenContracts, poolContracts, lendingPools, owner1, depositor);
+            supportedAssets = convertAssetsListToSupportedAssets(assetsList);
 
             let tokenManager = await deployContract(
                 owner1,
@@ -84,12 +79,6 @@ describe('Smart loan', () => {
                     lendingPools
                 ]
             ) as TokenManager;
-
-            diamondAddress = await deployDiamond();
-
-
-            smartLoansFactory = await deployContract(owner1, SmartLoansFactoryArtifact) as SmartLoansFactory;
-            await smartLoansFactory.initialize(diamondAddress);
 
             await recompileConstantsFile(
                 'local',
@@ -126,7 +115,7 @@ describe('Smart loan', () => {
             expect(await loan.owner()).to.equal(owner1.address);
             expect(await loan.proposedOwner()).to.equal(owner2.address);
             await expect(loan.connect(badGuy).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("DiamondStorageLib: Must be contract owner");
-            await expect(loan.connect(owner1).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("ECDSA: invalid signature 'v' value'");
+            await expect(loan.connect(owner1).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("Calldata overflow or underflow");
             await expect(loan.connect(owner2).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("DiamondStorageLib: Must be contract owner");
 
             expect(await smartLoansFactory.ownersToLoans(owner1.address)).to.equal(loan.address);
@@ -143,7 +132,7 @@ describe('Smart loan', () => {
 
             await expect(loan.connect(badGuy).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("DiamondStorageLib: Must be contract owner");
             await expect(loan.connect(owner1).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("DiamondStorageLib: Must be contract owner");
-            await expect(loan.connect(owner2).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("ECDSA: invalid signature 'v' value'");
+            await expect(loan.connect(owner2).borrow(toBytes32("AVAX"), toWei("1"))).to.be.revertedWith("Calldata overflow or underflow");
 
             expect(await smartLoansFactory.ownersToLoans(owner2.address)).to.equal(loan.address);
             expect(await smartLoansFactory.loansToOwners(loan.address)).to.equal(owner2.address);

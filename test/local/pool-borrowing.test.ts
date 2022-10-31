@@ -1,4 +1,4 @@
-import {waffle} from 'hardhat'
+import {ethers, waffle} from 'hardhat'
 import chai, {expect} from 'chai'
 import {solidity} from "ethereum-waffle";
 
@@ -9,14 +9,17 @@ import VariableUtilisationRatesCalculatorArtifact
 import LinearIndexArtifact from '../../artifacts/contracts/LinearIndex.sol/LinearIndex.json';
 import OpenBorrowersRegistryArtifact
     from '../../artifacts/contracts/mock/OpenBorrowersRegistry.sol/OpenBorrowersRegistry.json';
+import MockBorrowersRegistryArtifact
+    from '../../artifacts/contracts/mock/MockBorrowersRegistry.sol/MockBorrowersRegistry.json';
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {fromWei, getFixedGasSigners, time, toWei} from "../_helpers";
-import {LinearIndex, MockToken, OpenBorrowersRegistry, Pool, VariableUtilisationRatesCalculator} from "../../typechain";
+import {LinearIndex, MockToken, OpenBorrowersRegistry, Pool, VariableUtilisationRatesCalculator, MockBorrowersRegistry} from "../../typechain";
 import {Contract} from "ethers";
 
 chai.use(solidity);
 
 const {deployContract} = waffle;
+const ZERO = ethers.constants.AddressZero;
 
 describe('Pool with variable utilisation interest rates', () => {
     describe('Single borrowing with interest rates', () => {
@@ -44,7 +47,8 @@ describe('Pool with variable utilisation interest rates', () => {
                 borrowersRegistry.address,
                 depositIndex.address,
                 borrowingIndex.address,
-                mockToken.address
+                mockToken.address,
+                ZERO
             );
 
             await mockToken.connect(depositor).approve(sut.address, toWei("2.0"));
@@ -101,7 +105,8 @@ describe('Pool with variable utilisation interest rates', () => {
                 borrowersRegistry.address,
                 depositIndex.address,
                 borrowingIndex.address,
-                mockToken.address
+                mockToken.address,
+                ZERO
             );
 
             await mockToken.connect(depositor).approve(sut.address, toWei("2.0"));
@@ -165,7 +170,8 @@ describe('Pool with variable utilisation interest rates', () => {
                 borrowersRegistry.address,
                 depositIndex.address,
                 borrowingIndex.address,
-                mockToken.address
+                mockToken.address,
+                ZERO
             );
 
             await mockToken.connect(depositor).approve(sut.address, toWei("2.0"));
@@ -184,6 +190,62 @@ describe('Pool with variable utilisation interest rates', () => {
 
             let borrowed = fromWei(await sut.getBorrowed(borrower.address));
             expect(borrowed).to.be.closeTo(0.95, 0.000001);
+        });
+    });
+
+    describe('Borrowing access', () => {
+        let sut: Pool,
+            owner: SignerWithAddress,
+            depositor: SignerWithAddress,
+            nonRegistered: SignerWithAddress,
+            registered: SignerWithAddress,
+            borrower: SignerWithAddress,
+            mockToken: Contract,
+            borrowersRegistry: Contract,
+            VariableUtilisationRatesCalculator: VariableUtilisationRatesCalculator;
+
+        before("Deploy Pool contract", async () => {
+            [owner, depositor, borrower, nonRegistered, registered] = await getFixedGasSigners(10000000);
+            sut = (await deployContract(owner, PoolArtifact)) as Pool;
+
+            mockToken = (await deployContract(owner, MockTokenArtifact, [[depositor.address, owner.address]])) as MockToken;
+
+            VariableUtilisationRatesCalculator = (await deployContract(owner, VariableUtilisationRatesCalculatorArtifact)) as VariableUtilisationRatesCalculator;
+            borrowersRegistry = (await deployContract(owner, MockBorrowersRegistryArtifact)) as MockBorrowersRegistry;
+            const depositIndex = (await deployContract(owner, LinearIndexArtifact)) as LinearIndex;
+            await depositIndex.initialize(sut.address);
+            const borrowingIndex = (await deployContract(owner, LinearIndexArtifact)) as LinearIndex;
+            await borrowingIndex.initialize(sut.address);
+
+            await sut.initialize(
+                VariableUtilisationRatesCalculator.address,
+                borrowersRegistry.address,
+                depositIndex.address,
+                borrowingIndex.address,
+                mockToken.address,
+                ethers.constants.AddressZero
+            );
+
+            await mockToken.connect(depositor).approve(sut.address, toWei("2.0"));
+            await sut.connect(depositor).deposit(toWei("2.0"));
+        });
+
+        it("should not allow non registered account to borrow", async () => {
+            await expect(sut.connect(nonRegistered).borrow(toWei("1.0"))).to.be.revertedWith('Only authorized accounts may borrow');
+        });
+
+        it("should allow registered account to borrow", async () => {
+            expect(await mockToken.connect(registered).balanceOf(registered.address)).to.equal("0");
+            await expect(sut.connect(nonRegistered).borrow(toWei("1.0"))).to.be.revertedWith('Only authorized accounts may borrow');
+            await expect(sut.connect(registered).borrow(toWei("1.0"))).to.be.revertedWith('Only authorized accounts may borrow');
+            await expect(sut.connect(borrower).borrow(toWei("1.0"))).to.be.revertedWith('Only authorized accounts may borrow');
+
+            await borrowersRegistry.connect(owner).updateRegistry(registered.address, borrower.address);
+
+            await expect(sut.connect(borrower).borrow(toWei("1.0"))).to.be.revertedWith('Only authorized accounts may borrow');
+            await expect(sut.connect(registered).borrow(toWei("1.0"))).not.to.be.reverted;
+
+            expect(fromWei(await mockToken.connect(registered).balanceOf(registered.address))).to.equal(1);
         });
     });
 });

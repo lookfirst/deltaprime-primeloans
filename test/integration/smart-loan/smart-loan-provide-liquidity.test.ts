@@ -19,7 +19,7 @@ import {
     toWei,
 } from "../../_helpers";
 import {syncTime} from "../../_syncTime"
-import {WrapperBuilder} from "redstone-evm-connector";
+import {WrapperBuilder} from "@redstone-finance/evm-connector";
 import {parseUnits} from "ethers/lib/utils";
 import {
     PangolinIntermediary,
@@ -61,7 +61,7 @@ describe('Smart loan', () => {
         await syncTime();
     });
 
-    describe('A loan with staking operations', () => {
+    describe('A loan with liquidity provision', () => {
         let exchange: PangolinIntermediary,
             smartLoansFactory: SmartLoansFactory,
             yakStakingContract: Contract,
@@ -84,6 +84,11 @@ describe('Smart loan', () => {
 
             let redstoneConfigManager = await (new RedstoneConfigManager__factory(owner).deploy(["0xFE71e9691B9524BC932C23d0EeD5c9CE41161884"]));
 
+            diamondAddress = await deployDiamond();
+
+            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
+            await smartLoansFactory.initialize(diamondAddress);
+
             let lendingPools = [];
             // TODO: Possibly further extract the body of this for loop into a separate function shared among test suits
             for (const token of [
@@ -92,7 +97,7 @@ describe('Smart loan', () => {
                 let {
                     poolContract,
                     tokenContract
-                } = await deployAndInitializeLendingPool(owner, token.name, token.airdropList);
+                } = await deployAndInitializeLendingPool(owner, token.name, smartLoansFactory.address, token.airdropList);
                 await tokenContract!.connect(depositor).approve(poolContract.address, toWei("1000"));
                 await poolContract.connect(depositor).deposit(toWei("1000"));
                 lendingPools.push(new PoolAsset(toBytes32(token.name), poolContract.address));
@@ -130,12 +135,6 @@ describe('Smart loan', () => {
 
             yakStakingContract = await new ethers.Contract(yakStakingTokenAddress, erc20ABI, provider);
 
-            diamondAddress = await deployDiamond();
-
-
-            smartLoansFactory = await deployContract(owner, SmartLoansFactoryArtifact) as SmartLoansFactory;
-            await smartLoansFactory.initialize(diamondAddress);
-
             let exchangeFactory = await ethers.getContractFactory("PangolinIntermediary");
             exchange = (await exchangeFactory.deploy()).connect(owner) as PangolinIntermediary;
             await exchange.initialize(pangolinRouterAddress, supportedAssets.map(asset => asset.assetAddress));
@@ -172,38 +171,34 @@ describe('Smart loan', () => {
 
             MOCK_PRICES = [
                 {
-                    symbol: 'USDC',
+                    dataFeedId: 'USDC',
                     value: USD_PRICE
                 },
                 {
-                    symbol: 'AVAX',
+                    dataFeedId: 'AVAX',
                     value: AVAX_PRICE
                 },
                 {
-                    symbol: 'PNG_AVAX_USDC_LP',
+                    dataFeedId: 'PNG_AVAX_USDC_LP',
                     value: lpTokenPrice
                 },
             ]
 
             wrappedLoan = WrapperBuilder
-                .mockLite(loan)
-                .using(
-                    () => {
-                        return {
-                            prices: MOCK_PRICES,
-                            timestamp: Date.now()
-                        }
-                    })
+                // @ts-ignore
+                .wrap(loan)
+                .usingSimpleNumericMock({
+                    mockSignersCount: 10,
+                    dataPoints: MOCK_PRICES,
+                });
 
             nonOwnerWrappedLoan = WrapperBuilder
-                .mockLite(loan.connect(depositor))
-                .using(
-                    () => {
-                        return {
-                            prices: MOCK_PRICES,
-                            timestamp: Date.now()
-                        }
-                    })
+                // @ts-ignore
+                .wrap(loan.connect(depositor))
+                .usingSimpleNumericMock({
+                    mockSignersCount: 10,
+                    dataPoints: MOCK_PRICES,
+                });
         });
 
         it("should swap", async () => {

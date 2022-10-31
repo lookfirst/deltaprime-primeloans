@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "./lib/Bytes32EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -12,6 +12,7 @@ contract TokenManager {
     struct Asset {
         bytes32 asset;
         address assetAddress;
+        uint256 maxLeverage;
     }
 
     /**
@@ -32,7 +33,10 @@ contract TokenManager {
     EnumerableMap.Bytes32ToAddressMap private assetToPoolAddress;
     // Stores an asset's bytes32 symbol representation to asset's address mapping
     EnumerableMap.Bytes32ToAddressMap private assetToTokenAddress;
+    mapping(address => bytes32) public tokenAddressToSymbol;
     mapping(address => uint256) private tokenPositionInList;
+    // used for defining different leverage ratios for tokens
+    mapping(address => uint256) public maxTokenLeverage;
     address[] public supportedTokensList;
 
     address public adminTransferProposal;
@@ -50,6 +54,7 @@ contract TokenManager {
     function proposeAdminTransfer(address _newOwner) onlyAdmin public {
         require(_newOwner != msg.sender, "Can't propose oneself as a contract owner");
         adminTransferProposal = _newOwner;
+        emit AdminProposed(msg.sender, _newOwner, block.timestamp);
     }
 
     function executeAdminTransfer() public {
@@ -111,14 +116,14 @@ contract TokenManager {
 
     function addTokenAssets(Asset[] memory tokenAssets) public onlyAdmin {
         for (uint256 i = 0; i < tokenAssets.length; i++) {
-            _addTokenAsset(tokenAssets[i].asset, tokenAssets[i].assetAddress);
+            _addTokenAsset(tokenAssets[i].asset, tokenAssets[i].assetAddress, tokenAssets[i].maxLeverage);
         }
     }
 
     function activateToken(address token) public onlyAdmin {
         require(tokenToStatus[token] == _INACTIVE, "Must be inactive");
         tokenToStatus[token] = _ACTIVE;
-        emit TokenAssetDeactivated(msg.sender, token, block.timestamp);
+        emit TokenAssetActivated(msg.sender, token, block.timestamp);
     }
 
     function deactivateToken(address token) public onlyAdmin {
@@ -127,12 +132,14 @@ contract TokenManager {
         emit TokenAssetDeactivated(msg.sender, token, block.timestamp);
     }
 
-    function _addTokenAsset(bytes32 _asset, address _tokenAddress) internal {
+    function _addTokenAsset(bytes32 _asset, address _tokenAddress, uint256 _maxLeverage) internal {
         require(_asset != "", "Cannot set an empty string asset.");
         require(_tokenAddress != address(0), "Cannot set an empty address.");
         require(!assetToTokenAddress.contains(_asset), "Asset's token already exists");
+        setMaxTokenLeverage(_tokenAddress, _maxLeverage);
 
         assetToTokenAddress.set(_asset, _tokenAddress);
+        tokenAddressToSymbol[_tokenAddress] = _asset;
         tokenToStatus[_tokenAddress] = _ACTIVE;
 
         supportedTokensList.push(_tokenAddress);
@@ -165,7 +172,9 @@ contract TokenManager {
     function _removeTokenAsset(bytes32 _tokenAsset) internal {
         address tokenAddress = getAssetAddress(_tokenAsset, true);
         EnumerableMap.remove(assetToTokenAddress, _tokenAsset);
+        tokenAddressToSymbol[tokenAddress] = 0;
         tokenToStatus[tokenAddress] = _NOT_SUPPORTED;
+        maxTokenLeverage[tokenAddress] = 0;
         _removeTokenFromList(tokenAddress);
         emit TokenAssetRemoved(msg.sender, _tokenAsset, block.timestamp);
     }
@@ -177,8 +186,15 @@ contract TokenManager {
     }
 
     function _removePoolAsset(bytes32 _poolAsset) internal {
+        address poolAddress = getPoolAddress(_poolAsset);
         EnumerableMap.remove(assetToPoolAddress, _poolAsset);
-        emit PoolAssetRemoved(msg.sender, _poolAsset, block.timestamp);
+        emit PoolAssetRemoved(msg.sender, _poolAsset, poolAddress, block.timestamp);
+    }
+
+    function setMaxTokenLeverage(address token, uint256 maxLeverage) public onlyAdmin {
+        //LTV must be lower than 5
+        require(maxLeverage <= 0.833333333333333333e18, 'Leverage higher than maximum acceptable');
+        maxTokenLeverage[token] = maxLeverage;
     }
 
     modifier onlyAdmin {
@@ -186,7 +202,21 @@ contract TokenManager {
         _;
     }
 
-    event AdminChanged(address indexed olAdmin, address newAdmin, uint256 timestamp);
+    /**
+     * @dev emitted after proposing a new admin
+     * @param oldAdmin current admin
+     * @param newAdmin new admin proposed
+     * @param timestamp time of proposal
+     **/
+    event AdminProposed(address indexed oldAdmin, address newAdmin, uint256 timestamp);
+
+    /**
+     * @dev emitted after changing an admin
+     * @param oldAdmin previous admin
+     * @param newAdmin new admin being set
+     * @param timestamp time of changing an admin
+     **/
+    event AdminChanged(address indexed oldAdmin, address newAdmin, uint256 timestamp);
 
     /**
      * @dev emitted after adding a token asset
@@ -196,6 +226,14 @@ contract TokenManager {
      * @param timestamp time of adding a token asset
      **/
     event TokenAssetAdded(address indexed performer, bytes32 indexed tokenAsset, address assetAddress, uint256 timestamp);
+
+    /**
+     * @dev emitted after activating a token asset
+     * @param performer an address of the wallet activating a token asset
+     * @param assetAddress an address of the token asset
+     * @param timestamp time of activating a token asset
+     **/
+    event TokenAssetActivated(address indexed performer, address assetAddress, uint256 timestamp);
 
     /**
      * @dev emitted after deactivating a token asset
@@ -217,16 +255,17 @@ contract TokenManager {
      * @dev emitted after adding a pool asset
      * @param performer an address of wallet adding the pool asset
      * @param poolAsset pool asset
-     * @param poolAssetAddress an address of the pool asset
+     * @param poolAddress an address of the pool asset
      * @param timestamp time of the pool asset addition
      **/
-    event PoolAssetAdded(address indexed performer, bytes32 indexed poolAsset, address poolAssetAddress, uint256 timestamp);
+    event PoolAssetAdded(address indexed performer, bytes32 indexed poolAsset, address poolAddress, uint256 timestamp);
 
     /**
      * @dev emitted after removing a pool asset
      * @param performer an address of wallet removing the pool asset
      * @param poolAsset pool asset
+     * @param poolAddress an address of the pool asset
      * @param timestamp time of a pool asset removal
      **/
-    event PoolAssetRemoved(address indexed performer, bytes32 indexed poolAsset, uint256 timestamp);
+    event PoolAssetRemoved(address indexed performer, bytes32 indexed poolAsset, address poolAddress, uint256 timestamp);
 }

@@ -1,3 +1,5 @@
+pragma solidity ^0.8.17;
+
 import "../../facets/SmartLoanViewFacet.sol";
 
 interface ISmartLoanViewFacet {
@@ -14,6 +16,12 @@ interface ISmartLoanViewFacet {
     function getBalance(bytes32 _asset) external view returns (uint256);
 
     function getPercentagePrecision() external view returns (uint256);
+
+    function getContractOwner() external view returns (address _owner);
+
+    function getProposedOwner() external view returns (address _proposed);
+
+    function getStakedPositions() external view returns (IStakingPositions.StakedPosition[] memory  _positions);
 
     function initialize(address owner) external;
 }

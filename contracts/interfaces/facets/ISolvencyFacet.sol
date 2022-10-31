@@ -1,9 +1,13 @@
+pragma solidity ^0.8.17;
+
 interface ISolvencyFacet {
     function getDebt() external view returns (uint256);
 
     function getFullLoanStatus() external view returns (uint256[4] memory);
 
-    function getLTV() external view returns (uint256);
+    function getHealthRatio() external view returns (uint256);
+
+    function getThresholdWeightedValue() external view returns (uint256);
 
     function getMaxBlockTimestampDelay() external view returns (uint256);
 

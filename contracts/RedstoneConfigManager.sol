@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -10,6 +10,7 @@ contract RedstoneConfigManager is Ownable {
 
     constructor(address[] memory _trustedSigners) {
         for (uint256 i = 0; i < _trustedSigners.length; i++) {
+            require(!signerExists(_trustedSigners[i]), "Signer already exists");
             _addTrustedSigner(_trustedSigners[i]);
         }
     }
@@ -26,6 +27,7 @@ contract RedstoneConfigManager is Ownable {
         for (uint256 i = 0; i < _trustedSigners.length; i++) {
             require(!signerExists(_trustedSigners[i]), "Signer already exists");
             _addTrustedSigner(_trustedSigners[i]);
+            emit SignerAdded(msg.sender, _trustedSigners[i], block.timestamp);
         }
     }
 
@@ -38,6 +40,7 @@ contract RedstoneConfigManager is Ownable {
         for (uint256 i = 0; i < _trustedSigners.length; i++) {
             require(signerExists(_trustedSigners[i]), "Signer does not exists");
             _removeTrustedSigner(_trustedSigners[i]);
+            emit SignerRemoved(msg.sender, _trustedSigners[i], block.timestamp);
         }
     }
 
@@ -58,4 +61,25 @@ contract RedstoneConfigManager is Ownable {
             }
         }
     }
+
+    /* ========== OVERRIDDEN FUNCTIONS ========== */
+
+    function renounceOwnership() public virtual override {}
+
+    // EVENTS
+    /**
+    * @dev emitted after adding a signer
+    * @param user performing the transaction
+    * @param signer address of added signer
+    * @param timestamp of change
+    **/
+    event SignerAdded(address indexed user, address signer, uint256 timestamp);
+
+    /**
+    * @dev emitted after removing a signer
+    * @param user performing the transaction
+    * @param signer address of removed signer
+    * @param timestamp of change
+    **/
+    event SignerRemoved(address indexed user, address signer, uint256 timestamp);
 }

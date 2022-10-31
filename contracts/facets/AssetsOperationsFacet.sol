@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
@@ -127,37 +127,37 @@ contract AssetsOperationsFacet is ReentrancyGuardKeccak, SolvencyMethods {
 
     /**
      * @dev emitted after a loan is funded
-     * @param funder the address which funded the loan
-     * @param asset funded by an investor
+     * @param user the address which funded the loan
+     * @param asset funded by a user
      * @param amount the amount of funds
      * @param timestamp time of funding
      **/
-    event Funded(address indexed funder, bytes32 indexed asset, uint256 amount, uint256 timestamp);
+    event Funded(address indexed user, bytes32 indexed asset, uint256 amount, uint256 timestamp);
 
     /**
      * @dev emitted after the funds are withdrawn from the loan
-     * @param owner the address which withdraws funds from the loan
-     * @param asset withdrawn by an investor
+     * @param user the address which withdraws funds from the loan
+     * @param asset withdrawn by a user
      * @param amount of funds withdrawn
      * @param timestamp of the withdrawal
      **/
-    event Withdrawn(address indexed owner, bytes32 indexed asset, uint256 amount, uint256 timestamp);
+    event Withdrawn(address indexed user, bytes32 indexed asset, uint256 amount, uint256 timestamp);
 
     /**
      * @dev emitted when funds are borrowed from the pool
-     * @param borrower the address of borrower
-     * @param asset borrowed by an investor
+     * @param user the address of borrower
+     * @param asset borrowed by an= user
      * @param amount of the borrowed funds
      * @param timestamp time of the borrowing
      **/
-    event Borrowed(address indexed borrower, bytes32 indexed asset, uint256 amount, uint256 timestamp);
+    event Borrowed(address indexed user, bytes32 indexed asset, uint256 amount, uint256 timestamp);
 
     /**
      * @dev emitted when funds are repaid to the pool
-     * @param borrower the address initiating repayment
-     * @param _asset asset repaid by an investor
+     * @param user the address initiating repayment
+     * @param asset asset repaid by a user
      * @param amount of repaid funds
      * @param timestamp of the repayment
      **/
-    event Repaid(address indexed borrower, bytes32 indexed _asset, uint256 amount, uint256 timestamp);
+    event Repaid(address indexed user, bytes32 indexed asset, uint256 amount, uint256 timestamp);
 }

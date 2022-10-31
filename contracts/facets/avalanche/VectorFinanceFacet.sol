@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../../ReentrancyGuardKeccak.sol";
@@ -9,6 +9,8 @@ import "../../interfaces/IVectorFinanceStaking.sol";
 import {DiamondStorageLib} from "../../lib/DiamondStorageLib.sol";
 import "../../interfaces/IStakingPositions.sol";
 import "../../OnlyOwnerOrInsolvent.sol";
+//This path is updated during deployment
+import "../../lib/local/DeploymentConstants.sol";
 
 contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwnerOrInsolvent {
 
@@ -30,6 +32,7 @@ contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwner
 
     function vectorStakeUSDC1(uint256 amount) public {
         IStakingPositions.StakedPosition memory position = IStakingPositions.StakedPosition({
+            vault: VectorUSDCStaking1,
             symbol: "USDC",
             balanceSelector: this.vectorUSDC1Balance.selector,
             unstakeSelector: this.vectorUnstakeUSDC1.selector
@@ -48,6 +51,7 @@ contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwner
 
     function vectorStakeUSDC2(uint256 amount) public {
         IStakingPositions.StakedPosition memory position = IStakingPositions.StakedPosition({
+            vault: VectorUSDCStaking2,
             symbol: "USDC",
             balanceSelector: this.vectorUSDC2Balance.selector,
             unstakeSelector: this.vectorUnstakeUSDC2.selector
@@ -66,6 +70,7 @@ contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwner
 
     function vectorStakeWAVAX1(uint256 amount) public {
         IStakingPositions.StakedPosition memory position = IStakingPositions.StakedPosition({
+            vault: VectorWAVAXStaking1,
             symbol: "AVAX",
             balanceSelector: this.vectorWAVAX1Balance.selector,
             unstakeSelector: this.vectorUnstakeWAVAX1.selector
@@ -84,6 +89,7 @@ contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwner
 
     function vectorStakeSAVAX1(uint256 amount) public {
         IStakingPositions.StakedPosition memory position = IStakingPositions.StakedPosition({
+            vault: VectorSAVAXStaking1,
             symbol: "sAVAX",
             balanceSelector: this.vectorSAVAX1Balance.selector,
             unstakeSelector: this.vectorUnstakeSAVAX1.selector
@@ -121,7 +127,7 @@ contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwner
             DiamondStorageLib.removeOwnedAsset(stakedTokenSymbol);
         }
 
-        emit Staked(msg.sender, stakedTokenSymbol, amount, block.timestamp);
+        emit Staked(msg.sender, stakedTokenSymbol, receiptToken, amount, block.timestamp);
     }
 
     /**
@@ -150,9 +156,37 @@ contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwner
             DiamondStorageLib.removeStakedPosition(balanceSelector);
         }
 
-        emit Unstaked(msg.sender, stakedTokenSymbol, newBalance - balance, block.timestamp);
+        emit Unstaked(msg.sender, stakedTokenSymbol, receiptToken, newBalance - balance, block.timestamp);
+
+        _handleRewards(stakingContract);
 
         return newBalance - balance;
+    }
+
+    function _handleRewards(IVectorFinanceStaking stakingContract) internal {
+        IVectorRewarder rewarder = stakingContract.rewarder();
+        TokenManager tokenManager = DeploymentConstants.getTokenManager();
+        uint256 index;
+
+        // We do not want to revert in case of unsupported rewardTokens in order not to block the unstaking/liquidation process
+        while(true) {
+            // No access to the length of rewardTokens[]. Need to iterate until indexOutOfRange
+            (bool success, bytes memory result) = address(rewarder).call(abi.encodeWithSignature("rewardTokens(uint256)", index));
+            if(!success) {
+                break;
+            }
+            address rewardToken = abi.decode(result, (address));
+            bytes32 rewardTokenSymbol = tokenManager.tokenAddressToSymbol(rewardToken);
+            if(rewardTokenSymbol == "") {
+                emit UnsupportedRewardToken(msg.sender, rewardToken, block.timestamp);
+                index += 1;
+                continue;
+            }
+            if(IERC20(rewardToken).balanceOf(address(this)) > 0) {
+                DiamondStorageLib.addOwnedAsset(rewardTokenSymbol, rewardToken);
+            }
+            index += 1;
+        }
     }
 
     // MODIFIERS
@@ -168,17 +202,27 @@ contract VectorFinanceFacet is ReentrancyGuardKeccak, SolvencyMethods, OnlyOwner
         * @dev emitted when user stakes an asset
         * @param user the address executing staking
         * @param asset the asset that was staked
+        * @param vault address of receipt token
         * @param amount of the asset that was staked
         * @param timestamp of staking
     **/
-    event Staked(address indexed user, bytes32 indexed asset, uint256 amount, uint256 timestamp);
+    event Staked(address indexed user, bytes32 indexed asset, address indexed vault, uint256 amount, uint256 timestamp);
 
     /**
         * @dev emitted when user unstakes an asset
         * @param user the address executing unstaking
         * @param asset the asset that was unstaked
+        * @param vault address of receipt token
         * @param amount of the asset that was unstaked
         * @param timestamp of unstaking
     **/
-    event Unstaked(address indexed user, bytes32 indexed asset, uint256 amount, uint256 timestamp);
+    event Unstaked(address indexed user, bytes32 indexed asset, address indexed vault, uint256 amount, uint256 timestamp);
+
+    /**
+        * @dev emitted when user collects rewards in tokens that are not supported
+        * @param user the address collecting rewards
+        * @param asset reward token that was collected
+        * @param timestamp of collecting rewards
+    **/
+    event UnsupportedRewardToken(address indexed user, address indexed asset, uint256 timestamp);
 }

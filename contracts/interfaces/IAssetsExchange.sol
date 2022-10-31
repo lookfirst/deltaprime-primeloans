@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: ;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -23,12 +23,12 @@ interface IAssetsExchange {
     /*
      * Adds liquidity of ERC20 tokens
      */
-    function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin) external returns (address);
+    function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin) external returns (address, uint, uint, uint);
 
     /*
      * Removes liquidity of ERC20 tokens
      */
-    function removeLiquidity(address tokenA, address tokenB, uint liquidity, uint amountAMin, uint amountBMin) external returns (address);
+    function removeLiquidity(address tokenA, address tokenB, uint liquidity, uint amountAMin, uint amountBMin) external returns (uint, uint);
 
     /**
      * Returns the minimum _soldToken amount that is required to be sold to receive _exactAmountOut of a _boughtToken.

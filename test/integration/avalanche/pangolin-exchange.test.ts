@@ -197,8 +197,6 @@ describe('PangolinIntermediary', () => {
                 toWei("2.5"),
                 parseUnits((AVAX_PRICE * 2.5).toFixed(6), BigNumber.from("6"))
             );
-
-            console.log(fromWei(await lpToken.balanceOf(owner.address)))
         });
 
 

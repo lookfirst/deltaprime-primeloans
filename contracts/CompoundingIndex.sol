@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Last deployed from commit: c5c938a0524b45376dd482cd5c8fb83fa94c2fcc;
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import "./lib/WadRayMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -41,7 +41,7 @@ contract CompoundingIndex is IIndex, Ownable {
     function setRate(uint256 _rate) public override onlyOwner {
         updateIndex();
         rate = _rate;
-        emit RateUpdated(rate);
+        emit RateUpdated(rate, block.timestamp);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -103,7 +103,9 @@ contract CompoundingIndex is IIndex, Ownable {
     /* ========== EVENTS ========== */
 
     /**
-     * @dev updatedRate the value of updated rate
+     * @dev Emitted after updating the current rate
+     * @param updatedRate the value of updated rate
+     * @param timestamp of the rate update
      **/
-    event RateUpdated(uint256 updatedRate);
+    event RateUpdated(uint256 updatedRate, uint256 timestamp);
 }
