@@ -63,8 +63,15 @@ contract SolvencyFacet is AvalancheDataServiceConsumerBase, DiamondHelper {
      * @dev This function uses the redstone-evm-connector
      **/
     function getTotalAssetsValue() public view virtual returns (uint256) {
-        bytes32[] memory assets = DeploymentConstants.getAllOwnedAssets();
+//        bytes32[] memory assets = DeploymentConstants.getAllOwnedAssets();
+        bytes32[] memory assets = DeploymentConstants.getTokenManager().getAllTokenAssets();
+        console.log('in get total assets value');
+        uint256 initialGas = gasleft();
+        console.log('Req sign. threshold: %s', getUniqueSignersThreshold());
+        console.log('Obtaining [%s] symbols.', assets.length);
+        uint256 initialGas1 = gasleft();
         uint256[] memory prices = getOracleNumericValuesFromTxMsg(assets);
+        console.log('Gas used for getOracleNumericValuesFromTxMsg: %s', initialGas1 - gasleft());
         uint256 nativeTokenPrice = getOracleNumericValueFromTxMsg(DeploymentConstants.getNativeTokenSymbol());
         if (prices.length > 0) {
             TokenManager tokenManager = DeploymentConstants.getTokenManager();
@@ -79,9 +86,10 @@ contract SolvencyFacet is AvalancheDataServiceConsumerBase, DiamondHelper {
 
                 total = total + (prices[i] * 10 ** 10 * assetBalance / (10 ** token.decimals()));
             }
-
+            console.log('Total gas used by getTotalAssetsValue: %s', initialGas - gasleft());
             return total;
         } else {
+            console.log('Total gas used by getTotalAssetsValue: %s', initialGas - gasleft());
             return 0;
         }
     }
@@ -133,6 +141,7 @@ contract SolvencyFacet is AvalancheDataServiceConsumerBase, DiamondHelper {
     }
 
     function getStakedValue() public view virtual returns (uint256) {
+        console.log('in get staked value');
         IStakingPositions.StakedPosition[] storage positions = DiamondStorageLib.stakedPositions();
 
         uint256 usdValue;
@@ -157,7 +166,8 @@ contract SolvencyFacet is AvalancheDataServiceConsumerBase, DiamondHelper {
     }
 
     function getTotalValue() public view virtual returns (uint256) {
-        return getTotalAssetsValue() + getStakedValue();
+//        return getTotalAssetsValue() + getStakedValue();
+        return getTotalAssetsValue();
     }
 
     function getFullLoanStatus() public view returns (uint256[4] memory) {

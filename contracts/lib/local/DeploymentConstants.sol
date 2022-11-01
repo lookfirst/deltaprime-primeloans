@@ -21,13 +21,13 @@ library DeploymentConstants {
 
     address private constant _NATIVE_ADDRESS = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
-    address private constant _DIAMOND_BEACON_ADDRESS = 0xd6e1afe5cA8D00A2EFC01B89997abE2De47fdfAf;
+    address private constant _DIAMOND_BEACON_ADDRESS = 0xf18774574148852771c2631d7d06E2A6c8b44fCA;
 
-    address private constant _SMART_LOANS_FACTORY_ADDRESS = 0x5FeaeBfB4439F3516c74939A9D04e95AFE82C4ae;
+    address private constant _SMART_LOANS_FACTORY_ADDRESS = 0xa68E430060f74F9821D2dC9A9E2CE3aF7d842EBe;
 
-    address private constant _TOKEN_MANAGER_ADDRESS = 0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE;
+    address private constant _TOKEN_MANAGER_ADDRESS = 0x20F5f006a0184883068bBF58fb0c526A8EEa8BFD;
 
-    address private constant _REDSTONE_CONFIG_MANAGER_ADDRESS = 0x40918Ba7f132E0aCba2CE4de4c4baF9BD2D7D849;
+    address private constant _REDSTONE_CONFIG_MANAGER_ADDRESS = 0x996785Fe937d92EDBF420F3Bf70Acc62ecD6f655;
 
     //implementation-specific
 

@@ -67,7 +67,8 @@ describe('Smart loan', () => {
         before("deploy factory, exchange, wrapped native token pool and USD pool", async () => {
             [owner, depositor] = await getFixedGasSigners(10000000);
             // let assetsList = ['AVAX', 'ETH', 'MCKUSD'];
-            let assetsList = ['AVAX', 'ETH', 'LINK'];
+            let assetsList = ['AVAX', 'ETH', 'USDC'];
+            // let assetsList = ['AVAX', 'ETH', 'LINK', "BTC", "USDC", "USDT", "PNG", "QI", "YAK", "sAVAX", "XAVA", "YYAV3SA1", "SAV2", "TJ_AVAX_USDC_LP", "PNG_AVAX_USDC_LP"];
             let poolNameAirdropList: Array<PoolInitializationObject> = [
                 {name: 'AVAX', airdropList: [depositor]},
                 {name: 'MCKUSD', airdropList: [owner, depositor]}
@@ -132,13 +133,14 @@ describe('Smart loan', () => {
             //         mockSignersCount: 10,
             //         dataPoints: MOCK_PRICES,
             //     });
-            // @ts-ignore
+            //@ts-ignore
             wrappedLoan = WrapperBuilder.wrap(loan).usingDataService(
                 {
                     dataServiceId: "redstone-avalanche-prod",
-                    uniqueSignersCount: 10,
+                    uniqueSignersCount: 3,
                     // dataFeeds: ["AVAX", "ETH", "USDC", "BTC", "LINK"],
-                    dataFeeds: ["AVAX", "ETH", "LINK"],
+                    dataFeeds: ["AVAX", "ETH", "USDC"],
+                    // dataFeeds: ["AVAX", "ETH", "LINK", "BTC", "USDC", "USDT", "PNG", "QI", "YAK", "sAVAX", "XAVA", "YYAV3SA1", "SAV2", "TJ_AVAX_USDC_LP", "PNG_AVAX_USDC_LP"],
                 },
                 ["https://d33trozg86ya9x.cloudfront.net"]
             );
