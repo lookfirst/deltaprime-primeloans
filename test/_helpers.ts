@@ -4,7 +4,6 @@ import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {
     CompoundingIndex,
     MockToken,
-    OpenBorrowersRegistry__factory,
     Pool,
     VariableUtilisationRatesCalculator
 } from "../typechain";
@@ -432,7 +431,8 @@ export const deployAllFacets = async function (diamondAddress: any, chain = 'AVA
         'getStakedValue',
         'getTotalValue',
         'getFullLoanStatus',
-        'getHealthRatio'
+        'getHealthRatio',
+        'isSolvent'
     ])
     if (chain == 'AVAX') {
         await deployFacet("SmartLoanWrappedNativeTokenFacet", diamondAddress, ['depositNativeToken', 'wrapNativeToken', 'unwrapAndWithdraw'])

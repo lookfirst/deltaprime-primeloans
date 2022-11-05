@@ -14,7 +14,12 @@ const supportedAssets = [
     asset('ETH'),
     asset('USDT'),
     asset('LINK'),
-    asset('sAVAX')
+    asset('sAVAX'),
+    asset('YYAV3SA1'),
+    asset('SAV2'),
+    asset('PNG_AVAX_USDC_LP'),
+    asset('TJ_AVAX_USDC_LP'),
+    asset('YY_TJ_AVAX_USDC_LP')
 ]
 
 function asset(symbol) {
