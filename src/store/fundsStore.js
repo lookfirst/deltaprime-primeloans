@@ -435,16 +435,9 @@ export default {
 
       const loanAssets = mergeArrays([(
           await state.smartLoanContract.getAllOwnedAssets()).map(el => fromBytes32(el)),
-        Object.keys(config.POOLS_CONFIG)
+          Object.keys(config.POOLS_CONFIG),
+          [removeRequest.firstAsset, removeRequest.secondAsset]
       ]);
-
-      console.log(removeRequest.minFirstAmount)
-      console.log(removeRequest.minSecondAmount)
-      console.log(1)
-      console.log((removeRequest.minFirstAmount).toFixed(firstDecimals))
-      console.log((removeRequest.minSecondAmount).toFixed(secondDecimals))
-      console.log(removeRequest.value)
-      console.log(removeRequest.value.toFixed(removeRequest.assetDecimals))
 
       const transaction = await (await wrapContract(state.smartLoanContract, loanAssets))[config.DEX_CONFIG[removeRequest.dex].removeLiquidityMethod](
           toBytes32(removeRequest.firstAsset),
