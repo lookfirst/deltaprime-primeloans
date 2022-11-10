@@ -3,7 +3,6 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "redstone-evm-connector/lib/contracts/message-based/PriceAware.sol";
 import "@redstone-finance/evm-connector/contracts/data-services/AvalancheDataServiceConsumerBase.sol";
 import "@redstone-finance/evm-connector/contracts/mocks/RedstoneConsumerNumericMock.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
