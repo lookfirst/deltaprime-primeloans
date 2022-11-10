@@ -4,7 +4,7 @@ import {solidity} from "ethereum-waffle";
 import TokenManagerArtifact from '../../../artifacts/contracts/TokenManager.sol/TokenManager.json';
 import SmartLoansFactoryArtifact from '../../../artifacts/contracts/SmartLoansFactory.sol/SmartLoansFactory.json';
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
-import {WrapperBuilder} from "redstone-evm-connector";
+import {WrapperBuilder} from "@redstone-finance/evm-connector";
 import {
     addMissingTokenContracts,
     Asset,
