@@ -1218,10 +1218,10 @@
   resolved "https://registry.yarnpkg.com/@polka/url/-/url-1.0.0-next.21.tgz#5de5a2385a35309427f6011992b544514d559aa1"
   integrity sha512-a5Sab1C4/icpTZVzZc5Ghpz88yQtGOyNqYXcZgOssB2uuAr+wF/MvN6bgtW32q7HHrvBki+BsZ0OuNv6EV3K9g==
 
-"@redstone-finance/evm-connector@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@redstone-finance/evm-connector/-/evm-connector-0.0.9.tgz#a94dad677c645e41689537da1bf56ec584b50c0d"
-  integrity sha512-TkW4tr986e4pCh2SKXaOhI1yzzhX3MsAZyHMOEPt6TD2WdOuyzTpGwnDBVt5np8uKSVbnAs/CnP6/bXqXoe4UA==
+"@redstone-finance/evm-connector@^0.0.11":
+  version "0.0.11"
+  resolved "https://registry.yarnpkg.com/@redstone-finance/evm-connector/-/evm-connector-0.0.11.tgz#531f649e6b00d0d0d55b75003ac718e946983a55"
+  integrity sha512-nN+nFN9oUxC6uqphMNe2iz8DUZ0bAhv4bLsFssn2Z+LErZbkNitGSpxYAJ43F1E0v3PswJmoeQWPLxALFrgkwA==
   dependencies:
     "@openzeppelin/contracts" "^4.7.3"
     axios "^1.1.3"
