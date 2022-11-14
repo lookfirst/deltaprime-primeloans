@@ -91,9 +91,11 @@ contract SolvencyFacet is AvalancheDataServiceConsumerBase, DiamondHelper {
     function getThresholdWeightedValue() public view virtual returns (uint256) {
         bytes32[] memory assets = DeploymentConstants.getAllOwnedAssets();
         uint256[] memory prices = getOracleNumericValuesFromTxMsg(assets);
-        uint256 nativeTokenPrice = getOracleNumericValueFromTxMsg(DeploymentConstants.getNativeTokenSymbol());
+        bytes32 nativeTokenSymbol = DeploymentConstants.getNativeTokenSymbol();
+        uint256 nativeTokenPrice = getOracleNumericValueFromTxMsg(nativeTokenSymbol);
         TokenManager tokenManager = DeploymentConstants.getTokenManager();
 
+        uint256 total = address(this).balance * nativeTokenPrice * tokenManager.maxTokenLeverage(tokenManager.getAssetAddress(nativeTokenSymbol, true)) / 10 ** 26;
         uint256 weightedValueOfTokens;
 
         if (prices.length > 0) {
