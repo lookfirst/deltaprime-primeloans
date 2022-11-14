@@ -38,8 +38,8 @@
 
       <div class="table__cell">
         <div class="actions">
-          <img class="action" src="src/assets/icons/plus.svg" v-on:click="openStakeModal()">
-          <img class="action" src="src/assets/icons/minus.svg" v-on:click="openUnstakeModal()">
+          <img class="action" v-bind:class="{'disabled': disabled}" src="src/assets/icons/plus.svg" v-on:click="openStakeModal()">
+          <img class="action" v-bind:class="{'disabled': disabled}" src="src/assets/icons/minus.svg" v-on:click="openUnstakeModal()">
         </div>
       </div>
 
@@ -53,6 +53,7 @@ import UnstakeModal from './UnstakeModal';
 import {mapState, mapActions} from 'vuex';
 import config from '../config';
 
+const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export default {
   name: 'StakingProtocolTableRow',
@@ -88,27 +89,33 @@ export default {
   },
   computed: {
     ...mapState('stakeStore', ['stakedAssets']),
-    ...mapState('fundsStore', ['assetBalances', 'smartLoanContract']),
+    ...mapState('fundsStore', ['assetBalances', 'lpBalances', 'smartLoanContract']),
     calculateDailyInterest() {
       return this.apy / 365 * this.balance;
     },
     protocol() {
       return config.PROTOCOLS_CONFIG[this.farm.protocol];
+    },
+    disabled() {
+      return !this.smartLoanContract || this.smartLoanContract.address === NULL_ADDRESS;
     }
   },
   methods: {
     ...mapActions('stakeStore', ['stake', 'unstake']),
     openStakeModal() {
+      if (this.disabled) {return;}
+
       const modalInstance = this.openModal(StakeModal);
       modalInstance.apy = this.apy;
-      modalInstance.available = this.assetBalances[this.asset.symbol];
+      modalInstance.available = this.asset.secondary ? this.lpBalances[this.asset.symbol] : this.assetBalances[this.asset.symbol];
       modalInstance.staked = Number(this.balance);
       modalInstance.asset = this.asset;
       modalInstance.protocol = this.protocol;
+      modalInstance.isLP = this.asset.secondary !== null;
       modalInstance.$on('STAKE', (stakeValue) => {
         const stakeRequest = {
           symbol: this.farm.feedSymbol,
-          amount: stakeValue,
+          amount: stakeValue.toFixed(config.DECIMALS_PRECISION),
           method: this.farm.stakeMethod,
           decimals: this.asset.decimals
         };
@@ -123,14 +130,18 @@ export default {
     },
 
     openUnstakeModal() {
+      if (this.disabled) {return;}
+
       const modalInstance = this.openModal(UnstakeModal);
       modalInstance.apy = this.apy;
       modalInstance.staked = Number(this.balance);
       modalInstance.asset = this.asset;
       modalInstance.protocol = this.protocol;
+      modalInstance.isLP = this.asset.secondary !== null;
       modalInstance.$on('UNSTAKE', (unstakeValue) => {
         const unstakeRequest = {
-          amount: unstakeValue,
+          amount: unstakeValue.toFixed(config.DECIMALS_PRECISION),
+          minAmount: this.farm.minAmount * unstakeValue,
           method: this.farm.unstakeMethod,
           decimals: this.asset.decimals
         };
@@ -245,6 +256,11 @@ export default {
 
           &:not(:last-child) {
             margin-right: 12px;
+          }
+
+          &.disabled {
+            opacity: 0.5;
+            cursor: default;
           }
         }
       }

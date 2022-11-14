@@ -6,13 +6,27 @@
            v-on:click="toggleExpanded()">
         <div class="header__cell">
           <div class="asset">
-            <div class="asset__icon">
-              <img :src="logoSrc(asset.symbol)">
+            <div class="asset__icon" v-bind:class="{'asset__icon--double': asset.primary && asset.secondary}">
+              <img v-if="!(asset.primary && asset.secondary)" :src="logoSrc(asset.symbol)">
+              <DoubleAssetIcon v-if="asset.primary && asset.secondary"
+                               :primary="asset.primary"
+                               :secondary="asset.secondary">
+              </DoubleAssetIcon>
             </div>
-            <div class="asset__name">
-              {{ asset.name }}
+            <div class="asset__info">
+              <div class="asset__name">
+                {{ asset.name }}
+              </div>
+              <div class="asset__dex" v-if="asset.dex">
+                by {{ asset.dex }}
+              </div>
             </div>
           </div>
+        </div>
+
+        <div class="header__cell">
+          <div class="header__cell__label">Available:</div>
+          <div class="header__cell__value">{{ formatTokenBalance(balance, 10) }}</div>
         </div>
 
         <div class="header__cell">
@@ -26,7 +40,7 @@
         </div>
 
         <div class="header__cell">
-          <div class="header__cell__label">Available protocols:</div>
+          <div class="header__cell__label">Protocols:</div>
           <div class="protocols-list" v-if="availableFarms && availableFarms.length > 0">
             <img v-for="protocol in availableFarms" class="protocol__icon"
                  :src="`src/assets/logo/${protocolLogo(protocol)}`">
@@ -69,11 +83,12 @@
 import StakingProtocolTableRow from './StakingProtocolTableRow';
 import config from '@/config';
 import {mapState} from 'vuex';
+import DoubleAssetIcon from './DoubleAssetIcon';
 
 
 export default {
   name: 'StakingAssetBeta',
-  components: {StakingProtocolTableRow},
+  components: {DoubleAssetIcon, StakingProtocolTableRow},
   props: {
     assetSymbol: {
       required: true,
@@ -97,9 +112,12 @@ export default {
   },
 
   computed: {
-    ...mapState('fundsStore', ['smartLoanContract']),
+    ...mapState('fundsStore', ['smartLoanContract', 'assetBalances', 'lpBalances']),
     asset() {
       return config.ASSETS_CONFIG[this.assetSymbol] ? config.ASSETS_CONFIG[this.assetSymbol] : config.LP_ASSETS_CONFIG[this.assetSymbol];
+    },
+    balance() {
+      return this.asset ? (this.asset.secondary ? this.lpBalances && this.lpBalances[this.assetSymbol] : this.assetBalances && this.assetBalances[this.assetSymbol]) : 0;
     },
     calculateStakingProtocolsHeight() {
       const headerHeight = 53;
@@ -242,12 +260,24 @@ export default {
           .asset__icon {
             width: 22px;
             height: 22px;
+
+            &.asset__icon--double {
+              margin-right: 20px;
+            }
           }
 
-          .asset__name {
-            font-size: $font-size-xsm;
-            font-weight: 600;
+          .asset__info {
             margin-left: 10px;
+
+            .asset__name {
+              font-size: $font-size-xsm;
+              font-weight: 600;
+            }
+
+            .asset__dex {
+              font-size: $font-size-xxs;
+              color: $medium-gray;
+            }
           }
         }
 

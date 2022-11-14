@@ -1,9 +1,9 @@
 <template>
   <div class="funds-beta-component">
 <!--    <button v-on:click="swapToWavax">wavax</button>-->
-    <div class="only-my-assets-checkbox">
-      <Checkbox :label="'Show only my assets'"></Checkbox>
-    </div>
+<!--    <div class="only-my-assets-checkbox">-->
+<!--      <Checkbox :label="'Show only my assets'"></Checkbox>-->
+<!--    </div>-->
     <div class="funds">
 <!--      <NameValueBadgeBeta :name="'Total value'">{{ (fullLoanStatus.totalValue ? fullLoanStatus.totalValue : 0) | usd }}</NameValueBadgeBeta>-->
       <div class="funds-table" v-if="funds">
@@ -19,13 +19,20 @@
       </div>
     </div>
     <div class="lp-tokens">
-      <div class="filter-container">
-        <div class="filter__label">Filter by:</div>
-        <AssetFilter :asset-options="assetsFilterOptions"></AssetFilter>
+      <div class="filters">
+        <div class="filter-container">
+          <div class="filter__label">Filter by assets:</div>
+          <AssetFilter :asset-options="lpAssetsFilterOptions" v-on:filterChange="selectLpTokens"></AssetFilter>
+        </div>
+        <div class="filter-container">
+          <div class="filter__label">Filter by DEX:</div>
+
+          <DexFilter :dex-options="lpDexFilterOptions" v-on:filterChange="selectDexes"></DexFilter>
+        </div>
       </div>
-      <div class="lp-table" v-if="lpTokens">
+      <div class="lp-table" v-if="lpTokens && filteredLpTokens">
         <TableHeader :config="lpTableHeaderConfig"></TableHeader>
-        <LpTableRow v-for="(lpToken, index) in lpTokens" v-bind:key="index" :lp-token="lpToken"></LpTableRow>
+        <LpTableRow v-for="(lpToken, index) in filteredLpTokens" v-bind:key="index" :lp-token="lpToken">{{lpToken}}</LpTableRow>
 <!--        <div class="paginator-container">-->
 <!--          <Paginator :total-elements="50" :page-size="6"></Paginator>-->
 <!--        </div>-->
@@ -38,25 +45,23 @@
 import NameValueBadgeBeta from './NameValueBadgeBeta';
 import config from '../config';
 import AssetsTableRow from './AssetsTableRow';
-import BorrowModal from './BorrowModal';
-import {mapState, mapActions} from 'vuex';
+import {mapActions, mapState} from 'vuex';
 import redstone from 'redstone-api';
 import Vue from 'vue';
 import Loader from './Loader';
-import {fromWei, formatUnits} from '../utils/calculate';
-import SwapModal from './SwapModal';
-import {fetchCollateralFromPayments} from '../utils/graph';
+import {formatUnits} from '../utils/calculate';
 import TableHeader from './TableHeader';
 import AssetFilter from './AssetFilter';
 import DoubleAssetIcon from './DoubleAssetIcon';
 import LpTableRow from './LpTableRow';
 import Paginator from './Paginator';
 import Checkbox from './Checkbox';
-
+import DexFilter from "./DexFilter";
 
 export default {
   name: 'Assets',
   components: {
+    DexFilter,
     Checkbox,
     Paginator,
     LpTableRow, DoubleAssetIcon, AssetFilter, TableHeader, Loader, AssetsTableRow, NameValueBadgeBeta},
@@ -64,13 +69,22 @@ export default {
     return {
       funds: null,
       lpTokens: config.LP_ASSETS_CONFIG,
+      selectedLpTokens: [] = [],
+      selectedDexes: [] = [],
       fundsTableHeaderConfig: null,
       lpTableHeaderConfig: null,
-      assetsFilterOptions: null,
+      lpAssetsFilterOptions: null,
+      lpDexFilterOptions: null,
     }
   },
   computed: {
     ...mapState('fundsStore', ['assets', 'fullLoanStatus', 'lpAssets', 'assetBalances', 'smartLoanContract', 'noSmartLoan']),
+    filteredLpTokens() {
+      return Object.values(this.lpTokens).filter(token =>
+          (this.selectedLpTokens.includes(token.primary) || this.selectedLpTokens.includes(token.secondary))
+          && this.selectedDexes.includes(token.dex)
+      );
+    },
   },
   watch: {
     assets: {
@@ -90,8 +104,11 @@ export default {
     this.funds = config.ASSETS_CONFIG;
     this.setupFundsTableHeaderConfig();
     this.setupLpTableHeaderConfig();
-    this.setupAssetsFilterOptions();
+    this.setupLpLpAssetsFilterOptions();
+    this.setupLpDexFilterOptions();
     this.updateLpPriceData();
+    this.selectedLpTokens = this.lpAssetsFilterOptions;
+    this.selectedDexes = this.lpDexFilterOptions;
   },
   methods: {
     ...mapActions('fundsStore',
@@ -103,15 +120,10 @@ export default {
         'createAndFundLoan',
         'setupSmartLoanContract',
         'getAllAssetsBalances',
-        'getDebts',
         'setAvailableAssetsValue',
         'updateFunds'
       ]),
     ...mapActions('poolStore', ['deposit']),
-
-    wavaxSwap() {
-      this.swapToWavax();
-    },
 
     updateFund(symbol, key, value) {
       Vue.set(this.funds[symbol], key, value);
@@ -205,7 +217,7 @@ export default {
             id: 'BALANCE'
           },
           {
-            label: 'Loan',
+            label: 'Borrowed',
             sortable: false,
             class: 'loan',
             id: 'LOAN'
@@ -245,10 +257,19 @@ export default {
             id: 'TOKEN'
           },
           {
+            label: ''
+          },
+          {
             label: 'Balance',
             sortable: false,
             class: 'balance',
             id: 'BALANCE'
+          },
+          {
+            label: 'TVL',
+            sortable: false,
+            class: 'balance',
+            id: 'tvl'
           },
           {
             label: 'APR',
@@ -257,19 +278,7 @@ export default {
             id: 'APR'
           },
           {
-            label: 'Share',
-            sortable: false,
-            class: 'trend',
-            id: 'TREND'
-          },
-          {
-            label: 'Price',
-            sortable: false,
-            class: 'price',
-            id: 'PRICE'
-          },
-          {
-            label: '',
+            label: ''
           },
           {
             label: 'Actions',
@@ -280,9 +289,21 @@ export default {
       }
     },
 
-    setupAssetsFilterOptions() {
-      this.assetsFilterOptions = ['AVAX', 'USDC', 'BTC', 'ETH', 'USDT', 'LINK', 'sAVAX'];
-    }
+    setupLpLpAssetsFilterOptions() {
+      this.lpAssetsFilterOptions = ['AVAX', 'USDC', 'BTC', 'ETH', 'USDT', 'LINK', 'sAVAX'];
+    },
+
+    setupLpDexFilterOptions() {
+      this.lpDexFilterOptions = ['Pangolin', 'TraderJoe'];
+    },
+
+    selectLpTokens(selectedTokens) {
+      this.selectedLpTokens = selectedTokens;
+    },
+
+    selectDexes(selectedDexes) {
+      this.selectedDexes = selectedDexes;
+    },
   },
 };
 </script>
@@ -311,7 +332,6 @@ export default {
       display: flex;
       flex-direction: column;
       width: 100%;
-      margin-top: 65px;
     }
 
     .funds-table__body {
@@ -328,20 +348,6 @@ export default {
     display: flex;
     flex-direction: column;
     margin-top: 68px;
-
-    .filter-container {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      margin-bottom: 10px;
-
-      .filter__label {
-        font-size: $font-size-xsm;
-        color: $medium-gray;
-        font-weight: 600;
-        margin-right: 12px;
-      }
-    }
 
     .lp-table {
 

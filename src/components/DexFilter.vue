@@ -1,61 +1,59 @@
 <template>
-  <div class="asset-filter-component">
-    <div class="asset-filter" v-if="assetOptions && filterValue">
+  <div class="dex-filter-component">
+    <div class="dex-filter" v-if="dexOptions && filterValue">
       <div class="filter__option"
-           v-for="option in assetOptions"
+           v-for="option in dexOptions"
            v-on:click="selectOption(option)"
            v-bind:class="{'active': filterValue[option].active}">
-        <img class="option__icon" :src="logoSrc(option)">
+        <img class="option__icon" :src="`src/assets/logo/${dexesConfig[option].logo}`">
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import config from "../config";
+
 export default {
-  name: 'AssetFilter',
+  name: 'DexFilter',
   props: {
-    assetOptions: null,
+    dexOptions: null
   },
 
   data() {
     return {
       filterValue: null,
+      dexesConfig: config.DEX_CONFIG
     }
   },
 
   methods: {
     setupFilterValue() {
       this.filterValue = {};
-      this.assetOptions.forEach(option => {
-        this.filterValue[option] = {asset: option, active: true};
+      this.dexOptions.forEach(option => {
+        this.filterValue[option] = {dex: option, active: true};
       });
     },
 
     selectOption(option) {
-      const allSelected = Object.values(this.filterValue).map(option => option.active).every(o => o);
-      if (allSelected) {
-        Object.keys(this.filterValue).forEach(asset => {
-          this.filterValue[asset].active = false;
+      if (this.filterValue[option].active) {
+        Object.keys(this.filterValue).forEach(dex => {
+          this.filterValue[dex].active = false;
         });
         this.filterValue[option].active = true;
       } else {
-        this.filterValue[option].active = !this.filterValue[option].active;
-        const noneSelected = Object.values(this.filterValue).map(option => option.active).every(o => !o);
-        if (noneSelected) {
-          Object.keys(this.filterValue).forEach(asset => {
-            this.filterValue[asset].active = true;
-          });
-        }
+        this.filterValue[option].active = true;
       }
+
+
       this.$forceUpdate();
-      const selectedAssets = Object.values(this.filterValue).filter(option => option.active).map(option => option.asset);
-      this.$emit('filterChange', selectedAssets);
+      const selectedDexs = Object.values(this.filterValue).filter(option => option.active).map(option => option.dex);
+      this.$emit('filterChange', selectedDexs);
     }
   },
 
   watch: {
-    assetOptions: {
+    dexOptions: {
       handler() {
         this.setupFilterValue();
       }
@@ -67,9 +65,9 @@ export default {
 <style lang="scss" scoped>
 @import "~@/styles/variables";
 
-.asset-filter-component {
+.dex-filter-component {
 
-  .asset-filter {
+  .dex-filter {
     display: flex;
     flex-direction: row;
     align-items: center;
