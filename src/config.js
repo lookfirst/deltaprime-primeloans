@@ -94,7 +94,7 @@ export default {
             {
                 protocol: 'YIELD_YAK',
                 apy: async () => yieldYakApy('0xd0F41b1C9338eB9d374c83cC76b684ba3BB71557'),
-                staked: async (address) => yieldYakBalance('0xd0F41b1C9338eB9d374c83cC76b684ba3BB71557', address),
+                staked: async (address) => yieldYakBalance('0xb8f531c0d3c53B1760bcb7F57d87762Fd25c4977', address),
                 stakeMethod: 'stakeSAVAXYak',
                 unstakeMethod: 'unstakeSAVAXYak',
                 token: 'SAVAX'
@@ -105,7 +105,7 @@ export default {
                 protocol: 'VECTOR_FINANCE',
                 //TODO: check if it's a right APY
                 apy: () => vectorFinanceApy('USDC'),
-                staked: (address) => vectorFinanceBalance('0x7550B2d6a1F039Dd6a3d54a857FEFCbF77213D80', address, 6),
+                staked: (address) => vectorFinanceBalance('0x994F0e36ceB953105D05897537BF55d201245156', address, 6),
                 stakeMethod: 'vectorStakeUSDC1',
                 unstakeMethod: 'vectorUnstakeUSDC1',
                 token: 'USDC'
