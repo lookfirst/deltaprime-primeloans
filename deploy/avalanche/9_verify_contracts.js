@@ -79,7 +79,7 @@ module.exports = async ({
         asset('PNG_AVAX_USDC_LP'),
     ]
 
-    const calldata = web3Abi.encodeFunctionCall(
+    let calldata = web3Abi.encodeFunctionCall(
         PangolinIntermediaryArtifact.abi.find(method => method.name === 'initialize'),
         [pangolinRouter, pangolinSupportedAssets.map(asset => asset.assetAddress)]
     )
@@ -111,7 +111,7 @@ module.exports = async ({
         asset('TJ_AVAX_USDC_LP'),
     ]
 
-    const calldata = web3Abi.encodeFunctionCall(
+    calldata = web3Abi.encodeFunctionCall(
         TraderJoeIntermediaryArtifact.abi.find(method => method.name === 'initialize'),
         [traderJoeRouter, traderJoeSupportedAssets.map(asset => asset.assetAddress)]
     )

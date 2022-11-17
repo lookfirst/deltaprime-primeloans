@@ -21,11 +21,11 @@
     <div class="lp-tokens">
       <div class="filter-container">
         <div class="filter__label">Filter by:</div>
-        <AssetFilter :asset-options="assetsFilterOptions" v-on:filterChange="filterLpTokens"></AssetFilter>
+        <AssetFilter :asset-options="assetsFilterOptions" v-on:filterChange="selectLpTokens"></AssetFilter>
       </div>
       <div class="lp-table" v-if="lpTokens && filteredLpTokens">
         <TableHeader :config="lpTableHeaderConfig"></TableHeader>
-        <LpTableRow v-for="(lpToken, index) in filteredLpTokens" v-bind:key="index" :lp-token="lpToken"></LpTableRow>
+        <LpTableRow v-for="(lpToken, index) in filteredLpTokens" v-bind:key="index" :lp-token="lpToken">{{lpToken}}</LpTableRow>
 <!--        <div class="paginator-container">-->
 <!--          <Paginator :total-elements="50" :page-size="6"></Paginator>-->
 <!--        </div>-->
@@ -64,7 +64,7 @@ export default {
     return {
       funds: null,
       lpTokens: config.LP_ASSETS_CONFIG,
-      filteredLpTokens: [],
+      selectedLpTokens: [] = [],
       fundsTableHeaderConfig: null,
       lpTableHeaderConfig: null,
       assetsFilterOptions: null,
@@ -72,6 +72,9 @@ export default {
   },
   computed: {
     ...mapState('fundsStore', ['assets', 'fullLoanStatus', 'lpAssets', 'assetBalances', 'smartLoanContract', 'noSmartLoan']),
+    filteredLpTokens() {
+      return Object.values(this.lpTokens).filter(token => this.selectedLpTokens.includes(token.primary) || this.selectedLpTokens.includes(token.secondary));
+    },
   },
   watch: {
     assets: {
@@ -93,7 +96,7 @@ export default {
     this.setupLpTableHeaderConfig();
     this.setupAssetsFilterOptions();
     this.updateLpPriceData();
-    this.filteredLpTokens = JSON.parse(JSON.stringify(this.lpTokens));
+    this.selectedLpTokens = this.assetsFilterOptions;
   },
   methods: {
     ...mapActions('fundsStore',
@@ -110,10 +113,6 @@ export default {
         'updateFunds'
       ]),
     ...mapActions('poolStore', ['deposit']),
-
-    wavaxSwap() {
-      this.swapToWavax();
-    },
 
     updateFund(symbol, key, value) {
       Vue.set(this.funds[symbol], key, value);
@@ -286,8 +285,8 @@ export default {
       this.assetsFilterOptions = ['AVAX', 'USDC', 'BTC', 'ETH', 'USDT', 'LINK', 'sAVAX'];
     },
 
-    filterLpTokens(selectedTokens) {
-      this.filteredLpTokens = Object.values(this.lpTokens).filter(token => selectedTokens.includes(token.primary) || selectedTokens.includes(token.secondary));
+    selectLpTokens(selectedTokens) {
+      this.selectedLpTokens = selectedTokens;
     },
   },
 };

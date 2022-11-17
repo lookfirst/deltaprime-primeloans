@@ -78,6 +78,7 @@ export default {
                 staked: async (address) => vectorFinanceBalance('0xff5386aF93cF4bD8d5AeCad6df7F4f4be381fD69', address),
                 stakeMethod: 'vectorStakeWAVAX1',
                 unstakeMethod: 'vectorUnstakeWAVAX1',
+                minAmount: 0.8,
                 token: 'AVAX'
             }
         ],
@@ -88,7 +89,7 @@ export default {
                 staked: (address) => vectorFinanceBalance('0x812b7C3b5a9164270Dd8a0b3bc47550877AECdB1', address),
                 stakeMethod: 'vectorStakeSAVAX1',
                 unstakeMethod: 'vectorUnstakeSAVAX1',
-                feedSymbol: 'SAV2',
+                minAmount: 0.8,
                 token: 'SAVAX'
             },
             {
@@ -108,6 +109,7 @@ export default {
                 staked: (address) => vectorFinanceBalance('0x994F0e36ceB953105D05897537BF55d201245156', address, 6),
                 stakeMethod: 'vectorStakeUSDC1',
                 unstakeMethod: 'vectorUnstakeUSDC1',
+                minAmount: 0.8,
                 token: 'USDC'
             }
         ],
