@@ -261,10 +261,19 @@ export default {
             id: 'TOKEN'
           },
           {
+            label: ''
+          },
+          {
             label: 'Balance',
             sortable: false,
             class: 'balance',
             id: 'BALANCE'
+          },
+          {
+            label: 'Share',
+            sortable: false,
+            class: 'balance',
+            id: 'SHARE'
           },
           {
             label: 'APR',
@@ -273,19 +282,7 @@ export default {
             id: 'APR'
           },
           {
-            label: 'Share',
-            sortable: false,
-            class: 'trend',
-            id: 'TREND'
-          },
-          {
-            label: 'Price',
-            sortable: false,
-            class: 'price',
-            id: 'PRICE'
-          },
-          {
-            label: '',
+            label: ''
           },
           {
             label: 'Actions',

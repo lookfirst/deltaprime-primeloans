@@ -11,6 +11,9 @@
         </div>
       </div>
 
+      <div class="table__cell">
+      </div>
+
       <div class="table__cell table__cell--double-value balance">
         <template v-if="lpBalances">
           <div class="double-value__pieces">
@@ -27,14 +30,11 @@
       </div>
 
       <div class="table__cell table__cell--double-value loan">
-        {{ lpToken.apr | percent }}
+        {{ `${((lpBalances && lpBalances[lpToken.symbol] && poolBalance) ? formatTokenBalance(lpBalances[lpToken.symbol] * 100 / poolBalance)  : 0)}%`  }}
       </div>
 
       <div class="table__cell">
-      </div>
-
-      <div class="table__cell price">
-        {{ lpToken.price | usd }}
+        {{ lpToken.apr | percent }}
       </div>
 
       <div></div>
@@ -76,6 +76,9 @@ import {mapActions, mapState} from "vuex";
 import ProvideLiquidityModal from "./ProvideLiquidityModal";
 import RemoveLiquidityModal from "./RemoveLiquidityModal";
 import WithdrawModal from "./WithdrawModal";
+const ethers = require('ethers');
+import {erc20ABI} from "../utils/blockchain";
+import {fromWei} from "../utils/calculate";
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -94,7 +97,7 @@ export default {
     lpToken: null
   },
 
-  mounted() {
+  async mounted() {
     this.setupActionsConfiguration();
   },
 
@@ -103,11 +106,13 @@ export default {
       actionsConfig: null,
       showChart: false,
       rowExpanded: false,
+      poolBalance: 0
     };
   },
 
   computed: {
     ...mapState('fundsStore', ['health', 'lpBalances', 'smartLoanContract', 'fullLoanStatus', 'assetBalances']),
+    ...mapState('network', ['provider']),
 
     hasSmartLoanContract() {
       return this.smartLoanContract && this.smartLoanContract.address !== NULL_ADDRESS;
@@ -122,6 +127,13 @@ export default {
         }
       },
     },
+    provider: {
+      async handler(provider) {
+        if (provider){
+          await this.setupPoolBalance();
+        }
+      }
+    }
   },
 
   methods: {
@@ -277,6 +289,11 @@ export default {
           this.closeModal();
         });
       });
+    },
+
+    async setupPoolBalance() {
+      const lpTokenContract = new ethers.Contract(this.lpToken.address, erc20ABI, provider);
+      this.poolBalance = fromWei(await lpTokenContract.totalSupply());
     }
   },
 };

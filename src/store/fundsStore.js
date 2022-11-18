@@ -106,7 +106,7 @@ export default {
   getters: {
     getHealth(state) {
       if (state.fullLoanStatus) {
-        return state.fullLoanStatus.thresholdWeightedValue != 0 ? Math.max(1 - state.fullLoanStatus.debt / state.fullLoanStatus.thresholdWeightedValue) : 0;
+        return state.fullLoanStatus.thresholdWeightedValue ? Math.max(1 - state.fullLoanStatus.debt / state.fullLoanStatus.thresholdWeightedValue) : 0;
       }
     }
   },

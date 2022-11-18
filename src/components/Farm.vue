@@ -42,7 +42,7 @@ export default {
   },
   methods: {
     setupAssetsFilterOptions() {
-      this.assetsFilterOptions = ['AVAX', 'USDC', 'ETH', 'USDT', 'sAVAX'];
+      this.assetsFilterOptions = ['AVAX', 'USDC', 'ETH', 'sAVAX'];
     },
     selectAssets(selectedTokens) {
       this.selectedAssets = selectedTokens;

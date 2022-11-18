@@ -25,13 +25,13 @@
         </div>
 
         <div class="header__cell">
-          <div class="header__cell__label">Staked:</div>
-          <div class="header__cell__value">{{ totalStaked | smartRound }}</div>
+          <div class="header__cell__label">Available:</div>
+          <div class="header__cell__value">{{ balance | smartRound }}</div>
         </div>
 
         <div class="header__cell">
-          <div class="header__cell__label">Available:</div>
-          <div class="header__cell__value">{{ balance | smartRound }}</div>
+          <div class="header__cell__label">Staked:</div>
+          <div class="header__cell__value">{{ totalStaked | smartRound }}</div>
         </div>
 
         <div class="header__cell">

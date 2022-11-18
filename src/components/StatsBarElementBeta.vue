@@ -3,7 +3,7 @@
     <div class="stat">
       <div class="stat__label">{{label}}</div>
       <div class="stat__value">
-        <LoadedValue :check="() => value != null" :value="value"></LoadedValue>
+        <LoadedValue :check="() => value" :value="value"></LoadedValue>
       </div>
       <div class="stat__extras">
         <slot></slot>

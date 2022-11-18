@@ -86,15 +86,6 @@ export default {
         ],
         sAVAX: [
             {
-                protocol: 'VECTOR_FINANCE',
-                apy: () => vectorFinanceApy('SAVAX'),
-                staked: (address) => vectorFinanceBalance('0x812b7C3b5a9164270Dd8a0b3bc47550877AECdB1', address),
-                stakeMethod: 'vectorStakeSAVAX1',
-                unstakeMethod: 'vectorUnstakeSAVAX1',
-                minAmount: 0.8,
-                token: 'SAVAX'
-            },
-            {
                 protocol: 'YIELD_YAK',
                 apy: async () => yieldYakApy('0xd0F41b1C9338eB9d374c83cC76b684ba3BB71557'),
                 staked: async (address) => yieldYakBalance('0xb8f531c0d3c53B1760bcb7F57d87762Fd25c4977', address),
@@ -102,6 +93,15 @@ export default {
                 unstakeMethod: 'unstakeSAVAXYak',
                 token: 'SAVAX'
             },
+            {
+                protocol: 'VECTOR_FINANCE',
+                apy: () => vectorFinanceApy('SAVAX'),
+                staked: (address) => vectorFinanceBalance('0x812b7C3b5a9164270Dd8a0b3bc47550877AECdB1', address),
+                stakeMethod: 'vectorStakeSAVAX1',
+                unstakeMethod: 'vectorUnstakeSAVAX1',
+                minAmount: 0.8,
+                token: 'SAVAX'
+            }
         ],
         USDC: [
             {
