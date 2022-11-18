@@ -1,7 +1,7 @@
 <template>
   <div class="stats-bar-beta-component">
     <div class="stats-bar">
-      <stats-bar-element-beta :label="'Total value'" :value="totalValue | usd">
+      <stats-bar-element-beta :label="'Total value'" :value="totalValue ? totalValue : 0 | usd">
       </stats-bar-element-beta>
       <stats-bar-element-beta v-if="health != null" :label="'Health'" :value="health | percent">
         <bar-gauge-beta :min="0" :max="1" :value="health"></bar-gauge-beta>
@@ -9,7 +9,7 @@
 
       <vue-loaders-ball-beat v-if="health == null" color="#A6A3FF" scale="1"></vue-loaders-ball-beat>
 
-      <stats-bar-element-beta :label="'Borrowed'" :value="debt | usd">
+      <stats-bar-element-beta :label="'Borrowed'" :value="debt ? debt : 0 | usd">
       </stats-bar-element-beta>
     </div>
   </div>
