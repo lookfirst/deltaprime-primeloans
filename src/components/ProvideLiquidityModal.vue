@@ -28,15 +28,15 @@
               LP balance:
             </div>
             <div v-if="true" class="summary__value">
-              {{ formatTokenBalance(lpTokenBalance + addedLiquidity, 10) }}
+              {{ formatTokenBalance(Number(lpTokenBalance) + Number(addedLiquidity), 10) }}
             </div>
             <div class="summary__divider"></div>
             <div class="summary__label">
-              {{ firstAsset.symbol }} balance: {{ formatTokenBalance(firstAssetBalance - firstAmount) }}
+              {{ firstAsset.symbol }} balance: {{ formatTokenBalance(Number(firstAssetBalance) - Number(firstAmount)) }}
             </div>
             <div class="summary__divider"></div>
             <div class="summary__label">
-              {{ secondAsset.symbol }} balance: {{ formatTokenBalance(secondAssetBalance - secondAmount) }}
+              {{ secondAsset.symbol }} balance: {{ formatTokenBalance(Number(secondAssetBalance) - Number(secondAmount)) }}
             </div>
           </div>
         </TransactionResultSummaryBeta>
@@ -114,14 +114,14 @@ export default {
     async firstInputChange(change) {
       this.firstAmount = change;
       this.secondAmount = this.firstAmount * this.lpToken.firstPrice / this.lpToken.secondPrice;
-      this.$refs.secondInput.setValue(this.secondAmount);
+      this.$refs.secondInput.setValue(this.secondAmount !== 0 ? this.secondAmount.toFixed(15): 0);
       await this.calculateLpBalance();
     },
 
     async secondInputChange(change) {
       this.secondAmount = change;
       this.firstAmount = this.secondAmount * this.lpToken.secondPrice / this.lpToken.firstPrice;
-      this.$refs.firstInput.setValue(this.firstAmount);
+      this.$refs.firstInput.setValue(this.firstAmount !== 0 ? this.firstAmount.toFixed(15) : 0);
       await this.calculateLpBalance();
     },
 
