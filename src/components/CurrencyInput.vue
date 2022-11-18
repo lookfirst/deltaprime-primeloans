@@ -172,8 +172,8 @@ export default {
         }
       };
       const wrongFormatValidator = {
-        validate: function (value) {
-          if (!value.toString().match(/^[0-9.,]+$/)) {
+        validate: (value) => {
+          if (!this.internalValue.toString().match(/^[0-9.,]+$/)) {
             return `Incorrect formatting. Please use only alphanumeric values.`;
           }
         }
