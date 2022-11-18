@@ -5,7 +5,7 @@
         <DoubleAssetIcon :primary="lpToken.primary" :secondary="lpToken.secondary"></DoubleAssetIcon>
         <div class="asset__info">
           <div class="asset__name">{{ lpToken.primary }} - {{ lpToken.secondary }}</div>
-          <div class="asset__loan">
+          <div class="asset__dex">
             on {{ lpToken.dex }}
           </div>
         </div>
@@ -323,7 +323,7 @@ export default {
           font-weight: 500;
         }
 
-        .asset__loan {
+        .asset__dex {
           font-size: $font-size-xxs;
           color: $medium-gray;
         }

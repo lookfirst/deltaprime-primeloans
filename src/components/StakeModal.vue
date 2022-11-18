@@ -14,7 +14,8 @@
           class="top-info__currency"> {{ asset.name }}</span></div>
       </div>
 
-      <CurrencyInput :symbol="asset.name" v-on:newValue="stakeValueChange" :validators="validators"></CurrencyInput>
+      <CurrencyInput v-if="isLP" :symbol="asset.primary" :symbol-secondary="asset.secondary" v-on:newValue="stakeValueChange"  :validators="validators"></CurrencyInput>
+      <CurrencyInput ref="currencyInput" v-else :symbol="asset.symbol" v-on:newValue="stakeValueChange"  :validators="validators"></CurrencyInput>
 
       <div class="transaction-summary-wrapper">
         <TransactionResultSummaryBeta>
@@ -87,6 +88,7 @@ export default {
     available: {},
     staked: {},
     asset: {},
+    isLp: false,
     protocol: null
   },
 

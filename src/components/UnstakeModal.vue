@@ -10,10 +10,12 @@
         <div class="top-info__value">{{ apy | percent }}</div>
         <div class="top-info__divider"></div>
         <div class="top-info__label">Staked:</div>
-        <div class="top-info__value">{{ staked | smartRound }}<span class="top-info__currency">{{ asset.name }}</span></div>
+        <div class="top-info__value">{{ staked | smartRound }}<span class="top-info__currency"> {{ asset.name }}</span></div>
       </div>
 
-      <CurrencyInput :symbol="asset.symbol" v-on:newValue="unstakeValueChange" :validators="validators"></CurrencyInput>
+      <CurrencyInput v-if="isLP" :symbol="asset.primary" :symbol-secondary="asset.secondary" v-on:newValue="unstakeValueChange"  :validators="validators"></CurrencyInput>
+      <CurrencyInput ref="currencyInput" v-else :symbol="asset.symbol" v-on:newValue="unstakeValueChange"  :validators="validators"></CurrencyInput>
+
 
       <div class="transaction-summary-wrapper">
         <TransactionResultSummaryBeta>
@@ -70,6 +72,7 @@ export default {
     available: {},
     staked: {},
     asset: {},
+    isLp: false,
     protocol: null,
   },
 

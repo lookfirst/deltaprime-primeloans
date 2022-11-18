@@ -19,7 +19,7 @@ export default {
       "sAVAX": {name: "sAVAX", symbol: "sAVAX", decimals: 18, address: addresses.sAVAX, maxLeverage: 0.83333333333},
       "QI": {name: "QI", symbol: "QI", decimals: 18, address: addresses.QI, maxLeverage: 0},
       "PNG": {name: "PNG", symbol: "PNG", decimals: 18, address: addresses.PNG, maxLeverage: 0},
-      "PTP": {name: "PTP", symbol: "PTP", decimals: 18, address: addresses.PTP, maxLeverage: 0},
+      "PTP": {name: "PTP", symbol: "PTP", logoExt: "png", decimals: 18, address: addresses.PTP, maxLeverage: 0},
     },
     POOLS_CONFIG: {
         AVAX: {
@@ -44,11 +44,13 @@ export default {
     DEX_CONFIG: {
         'Pangolin': {
             addLiquidityMethod: 'addLiquidityPangolin',
-            removeLiquidityMethod: 'removeLiquidityPangolin'
+            removeLiquidityMethod: 'removeLiquidityPangolin',
+            logo: 'png.svg'
         },
         'TraderJoe': {
             addLiquidityMethod: 'addLiquidityTraderJoe',
-            removeLiquidityMethod: 'removeLiquidityTraderJoe'
+            removeLiquidityMethod: 'removeLiquidityTraderJoe',
+            logo: 'joe.png'
         }
     },
     PROTOCOLS_CONFIG: {

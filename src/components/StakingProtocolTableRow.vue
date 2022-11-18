@@ -89,7 +89,7 @@ export default {
   },
   computed: {
     ...mapState('stakeStore', ['stakedAssets']),
-    ...mapState('fundsStore', ['assetBalances', 'smartLoanContract']),
+    ...mapState('fundsStore', ['assetBalances', 'lpBalances', 'smartLoanContract']),
     calculateDailyInterest() {
       return this.apy / 365 * this.balance;
     },
@@ -107,10 +107,11 @@ export default {
 
       const modalInstance = this.openModal(StakeModal);
       modalInstance.apy = this.apy;
-      modalInstance.available = this.assetBalances[this.asset.symbol];
+      modalInstance.available = this.asset.secondary ? this.lpBalances[this.asset.symbol] : this.assetBalances[this.asset.symbol];
       modalInstance.staked = Number(this.balance);
       modalInstance.asset = this.asset;
       modalInstance.protocol = this.protocol;
+      modalInstance.isLP = this.asset.secondary !== null;
       modalInstance.$on('STAKE', (stakeValue) => {
         const stakeRequest = {
           symbol: this.farm.feedSymbol,
@@ -136,6 +137,7 @@ export default {
       modalInstance.staked = Number(this.balance);
       modalInstance.asset = this.asset;
       modalInstance.protocol = this.protocol;
+      modalInstance.isLP = this.asset.secondary !== null;
       modalInstance.$on('UNSTAKE', (unstakeValue) => {
         const unstakeRequest = {
           amount: unstakeValue,
