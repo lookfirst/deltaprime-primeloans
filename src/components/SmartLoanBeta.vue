@@ -6,11 +6,11 @@
         :debt="noSmartLoanInternal ? 0 : debt"
         :health="noSmartLoanInternal ? 0 : health">
       </StatsBarBeta>
-      <InfoBubble v-if="noSmartLoanInternal" cacheKey="ACCOUNT-INIT" style="margin-top: 40px">
+      <InfoBubble v-if="noSmartLoanInternal === true" cacheKey="ACCOUNT-INIT" style="margin-top: 40px">
         To unlock borrowing, add tokens with <img style="transform: translateY(-2px);" src="src/assets/icons/plus.svg"> button.<br>
         This operation creates your Prime Account!
       </InfoBubble>
-      <InfoBubble v-if="!noSmartLoanInternal" cacheKey="ACCOUNT-READY" style="margin-top: 40px">
+      <InfoBubble v-if="noSmartLoanInternal === false" cacheKey="ACCOUNT-READY" style="margin-top: 40px">
         Your Prime Account is ready! Now you can borrow,<br>
          provide liquidity and farm them on the Farms page.
       </InfoBubble>
@@ -129,7 +129,6 @@ export default {
 
     updateLoanStatus(fullLoanStatus) {
       if (fullLoanStatus) {
-        this.noSmartLoanInternal = false;
         this.totalValue = fullLoanStatus.totalValue;
         this.debt = fullLoanStatus.debt;
         this.health = this.getHealth;

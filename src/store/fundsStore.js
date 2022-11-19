@@ -124,6 +124,7 @@ export default {
         await dispatch('getAllAssetsBalances');
         await dispatch('getDebts');
         await dispatch('getFullLoanStatus');
+        commit('setNoSmartLoan', false);
       } else {
         commit('setNoSmartLoan', true);
       }
@@ -132,7 +133,6 @@ export default {
     async updateFunds({state, dispatch, commit}) {
       if (state.smartLoanContract.address !== NULL_ADDRESS) {
         commit('setNoSmartLoan', false);
-
       }
       await dispatch('setupAssets');
       await dispatch('setupLpAssets');
