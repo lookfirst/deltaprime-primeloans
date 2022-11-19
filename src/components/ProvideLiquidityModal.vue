@@ -24,19 +24,32 @@
             Values after transaction:
           </div>
           <div class="summary__values">
-            <div class="summary__label">
-              LP balance:
+            <div class="summary__value_pair">
+              <div class="summary__label">
+                LP balance:
+              </div>
+              <div class="summary__value">
+                {{ formatTokenBalance(Number(lpTokenBalance) + Number(addedLiquidity), 10) }}
+              </div>
             </div>
-            <div v-if="true" class="summary__value">
-              {{ formatTokenBalance(Number(lpTokenBalance) + Number(addedLiquidity), 10) }}
+            <div class="summary__divider divider--long"></div>
+            <div class="summary__value_pair">
+              <div class="summary__label">
+                {{ firstAsset.symbol }} balance:
+              </div>
+              <div class="summary__value">
+                {{ formatTokenBalance(Number(firstAssetBalance) - Number(firstAmount)) }}
+              </div>
             </div>
-            <div class="summary__divider"></div>
-            <div class="summary__label">
-              {{ firstAsset.symbol }} balance: {{ formatTokenBalance(Number(firstAssetBalance) - Number(firstAmount)) }}
-            </div>
-            <div class="summary__divider"></div>
-            <div class="summary__label">
-              {{ secondAsset.symbol }} balance: {{ formatTokenBalance(Number(secondAssetBalance) - Number(secondAmount)) }}
+
+            <div class="summary__divider divider--long"></div>
+            <div class="summary__value_pair">
+              <div class="summary__label">
+                {{ secondAsset.symbol }} balance:
+              </div>
+              <div class="summary__value">
+                {{ formatTokenBalance(Number(secondAssetBalance) - Number(secondAmount)) }}
+              </div>
             </div>
           </div>
         </TransactionResultSummaryBeta>
