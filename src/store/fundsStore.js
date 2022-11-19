@@ -1,4 +1,4 @@
-import {awaitConfirmation, erc20ABI, wrapContract} from '../utils/blockchain';
+import {awaitConfirmation, erc20ABI, isPausedError, wrapContract} from '../utils/blockchain';
 import SMART_LOAN from '@artifacts/contracts/interfaces/SmartLoanGigaChadInterface.sol/SmartLoanGigaChadInterface.json';
 import SMART_LOAN_FACTORY_TUP from '@contracts/SmartLoansFactoryTUP.json';
 import SMART_LOAN_FACTORY from '@contracts/SmartLoansFactory.json';
@@ -48,6 +48,7 @@ export default {
     health: null,
     fullLoanStatus: {},
     noSmartLoan: null,
+    protocolPaused: false
   },
   mutations: {
     setSmartLoanContract(state, smartLoanContract) {
@@ -101,6 +102,10 @@ export default {
     setNoSmartLoan(state, noSmartLoan) {
       state.noSmartLoan = noSmartLoan;
     },
+
+    setProtocolPaused(state, paused) {
+      state.protocolPaused = paused;
+    }
   },
 
   getters: {
@@ -121,6 +126,12 @@ export default {
       state.assetBalances = [];
       if (state.smartLoanContract.address !== NULL_ADDRESS) {
         state.assetBalances = null;
+        try {
+          await state.smartLoanContract.getMaxLiquidationBonus();
+          await commit('setProtocolPaused', false);
+        } catch (e) {
+          if (isPausedError(e)) await commit('setProtocolPaused', true);
+        }
         await dispatch('getAllAssetsBalances');
         await dispatch('getDebts');
         await dispatch('getFullLoanStatus');

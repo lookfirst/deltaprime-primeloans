@@ -9,8 +9,11 @@
       <a href="https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn" target="_blank"><b>Metamask
         plugin</b></a>.
     </Banner>
-    <Banner v-if="highGasPrice && !showMetamaskBanner && !showNetworkBanner" :closable="true">
+    <Banner v-if="highGasPrice && !showMetamaskBanner && !showNetworkBanner && !showUpgradeBanner" :closable="true">
       Gas prices are high at the moment. Be careful with your transactions.
+    </Banner>
+    <Banner v-if="protocolPaused">
+      The protocol is paused because of an upgrade.
     </Banner>
     <div class="top-bar">
       <router-link to="/">
@@ -73,7 +76,8 @@ export default {
     });
   },
   computed: {
-    ...mapState('network', ['account', 'provider'])
+    ...mapState('network', ['account', 'provider']),
+    ...mapState('fundsStore', ['protocolPaused'])
   },
   methods: {
     ...mapActions('network', ['initNetwork']),

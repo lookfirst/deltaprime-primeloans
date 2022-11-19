@@ -37,7 +37,7 @@ export async function handleTransaction(fun, args, onSuccess, onFail) {
 
         if (onSuccess) onSuccess();
     } catch (error) {
-        if (onFail) onFail();
+        if (onFail) onFail(error);
     }
 }
 export async function awaitConfirmation(tx, provider, actionName) {
@@ -84,4 +84,8 @@ export async function handleCall(fun, args, onSuccess, onFail) {
 
 export function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
+}
+
+export function isPausedError(e) {
+    return e.data.message.includes("ProtocolUpgrade: paused");
 }
