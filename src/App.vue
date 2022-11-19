@@ -15,6 +15,9 @@
     <Banner v-if="protocolPaused">
       The protocol is paused because of an upgrade.
     </Banner>
+    <Banner v-if="oracleError">
+      Oracle error.
+    </Banner>
     <div class="top-bar">
       <router-link to="/">
         <img src="src/assets/icons/deltaprime.svg" class="logo">
@@ -77,7 +80,7 @@ export default {
   },
   computed: {
     ...mapState('network', ['account', 'provider']),
-    ...mapState('fundsStore', ['protocolPaused'])
+    ...mapState('fundsStore', ['protocolPaused', 'oracleError'])
   },
   methods: {
     ...mapActions('network', ['initNetwork']),

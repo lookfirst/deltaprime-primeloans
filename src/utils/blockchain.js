@@ -44,6 +44,7 @@ export async function awaitConfirmation(tx, provider, actionName) {
     const transaction = await provider.waitForTransaction(tx.hash);
 
     if (transaction.status === 0) {
+        console.log(transaction)
         Vue.$toast.error(`Failed to ${actionName}. Check Metamask for more info.`)
     } else Vue.$toast.success('Transaction success! Waiting for confirmations...');
 
@@ -88,4 +89,11 @@ export function sleep(ms) {
 
 export function isPausedError(e) {
     return e.data.message.includes("ProtocolUpgrade: paused");
+}
+
+export function isOracleError(e) {
+    const ORACLE_ERROR = "0x2b13aef500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003";
+    console.log('isOracleError')
+    console.log(e.data.data)
+    return e.data.data.includes(ORACLE_ERROR);
 }

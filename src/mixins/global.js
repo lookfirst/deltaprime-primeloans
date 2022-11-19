@@ -4,7 +4,7 @@ import {Contract} from "ethers";
 import EXCHANGETUP from '@artifacts/contracts/proxies/tup/avalanche/PangolinIntermediaryTUP.sol/PangolinIntermediaryTUP.json';
 import EXCHANGE from '@artifacts/contracts/integrations/avalanche/PangolinIntermediary.sol/PangolinIntermediary.json'
 import {acceptableSlippage, formatUnits, parseUnits} from "../utils/calculate";
-import {handleCall, handleTransaction, isPausedError} from "../utils/blockchain";
+import {handleCall, handleTransaction, isOracleError, isPausedError} from "../utils/blockchain";
 import Vue from 'vue';
 
 export default {
@@ -37,12 +37,16 @@ export default {
     },
 
     async handleTransaction(fun, args, onSuccess, onFail) {
-      if (!onFail) onFail = (e) => { if (isPausedError(e)) this.$store.commit('fundsStore/setProtocolPaused', true) }
+      if (!onFail) onFail = async (e) => await this.handleError(e);
       await handleTransaction(fun, args, onSuccess, onFail);
     },
     async handleCall(fun, args, onSuccess, onFail) {
-      if (!onFail) onFail = (e) => { if (isPausedError(e)) this.$store.commit('fundsStore/setProtocolPaused', true) }
+      if (!onFail) onFail = async (e) => await this.handleError(e);
       return await handleCall(fun, args, onSuccess, onFail);
+    },
+    async handleError(e) {
+      if (isPausedError(e)) this.$store.commit('fundsStore/setProtocolPaused', true)
+      if (isOracleError(e)) this.$store.commit('fundsStore/setOracleError', true)
     },
     async calculateSlippageForBuy(symbol, price, tokenDecimals, tokenAddress, amount) {
       if (amount > 0) {
