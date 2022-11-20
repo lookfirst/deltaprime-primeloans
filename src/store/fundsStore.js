@@ -347,6 +347,7 @@ export default {
       await dispatch('getAllAssetsBalances');
       setTimeout(async () => {
         await dispatch('updateFunds');
+        await dispatch('network/updateBalance', {}, {root: true});
       }, 1000);
     },
 
