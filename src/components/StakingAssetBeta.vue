@@ -26,7 +26,7 @@
 
         <div class="header__cell">
           <div class="header__cell__label">Available:</div>
-          <div class="header__cell__value">{{ balance | smartRound }}</div>
+          <div class="header__cell__value">{{ formatTokenBalance(balance, 10) }}</div>
         </div>
 
         <div class="header__cell">
