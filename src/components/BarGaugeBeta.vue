@@ -1,5 +1,5 @@
 <template>
-  <div class="bar-gauge-beta-component">
+  <div class="bar-gauge-beta-component" v-bind:class="{'bar-gauge-beta-component--inline': displayInline}">
     <div class="bar-gauge">
       <div class="bar" v-bind:class="{'slim': slim}">
         <div class="bar__value" v-bind:class="{'bar__value--error': value === 0}" :style="{'width': barGaugeValueWidth + 'px'}"></div>
@@ -34,6 +34,10 @@ export default {
     slim: {
       type: Boolean,
       default: false,
+    },
+    displayInline: {
+      type: Boolean,
+      default: false,
     }
   },
   computed: {
@@ -61,6 +65,10 @@ export default {
   flex-direction: row;
   align-items: center;
   justify-content: center;
+
+  &.bar-gauge-beta-component--inline {
+    display: inline-flex;
+  }
 
   .bar-gauge {
     display: flex;

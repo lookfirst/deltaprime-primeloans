@@ -275,6 +275,7 @@ export default {
       const modalInstance = this.openModal(SwapModal);
       modalInstance.sourceAsset = this.asset.symbol;
       modalInstance.sourceAssetBalance = this.assetBalances[this.asset.symbol];
+      modalInstance.assetBalances = this.assetBalances;
       modalInstance.targetAsset = Object.keys(config.ASSETS_CONFIG).filter(asset => asset !== this.asset.symbol)[0];
       modalInstance.$on('SWAP', swapRequest => {
         this.handleTransaction(this.swap, {swapRequest: swapRequest}).then(() => {
@@ -322,6 +323,7 @@ export default {
     openWithdrawModal() {
       const modalInstance = this.openModal(WithdrawModal);
       modalInstance.asset = this.asset;
+      modalInstance.assetBalance = this.assetBalances[this.asset.symbol];
       modalInstance.health = this.fullLoanStatus.health;
       modalInstance.totalCollateral = this.totalValue - this.debt;
       modalInstance.$on('WITHDRAW', withdrawEvent => {

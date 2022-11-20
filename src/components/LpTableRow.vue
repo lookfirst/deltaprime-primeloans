@@ -228,6 +228,7 @@ export default {
     openWithdrawModal() {
       const modalInstance = this.openModal(WithdrawModal);
       modalInstance.asset = this.lpToken;
+      modalInstance.assetBalance = this.lpBalances[this.lpToken.symbol];
       modalInstance.health = this.health;
       modalInstance.isLP = true;
       modalInstance.$on('WITHDRAW', withdrawEvent => {

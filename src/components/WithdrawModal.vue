@@ -8,7 +8,7 @@
       <div class="modal-top-info">
         <div class="top-info__label">Available:</div>
         <div class="top-info__value">
-          {{ asset.balance | smartRound }}
+          {{ assetBalance | smartRound }}
           <span class="top-info__currency">
             {{asset.symbol}}
           </span>
@@ -50,7 +50,8 @@
               Balance:
             </div>
             <div class="summary__value">
-              {{ asset.balance - withdrawValue | smartRound }} {{ isLP ? asset.primary + '-' + asset.secondary : asset.symbol  }}
+              {{ (Number(assetBalance) - Number(withdrawValue)) > 0 ? (Number(assetBalance) - Number(withdrawValue)) : 0 | smartRound }}
+              {{ isLP ? asset.primary + '-' + asset.secondary : asset.symbol  }}
             </div>
           </div>
         </TransactionResultSummaryBeta>
@@ -91,7 +92,7 @@ export default {
   props: {
     asset: {},
     health: {},
-    isLp: false
+    assetBalance: {},
   },
 
   data() {
@@ -101,14 +102,15 @@ export default {
       validators: [],
       currencyInputError: false,
       MIN_ALLOWED_HEALTH: config.MIN_ALLOWED_HEALTH,
-      selectedWithdrawAsset: 'AVAX'
+      selectedWithdrawAsset: 'AVAX',
+      isLP: false
     };
   },
 
   mounted() {
     setTimeout(() => {
       this.setupValidators();
-      this.updateHealthAfterTransaction();
+      // this.calculateHealthAfterTransaction();
     });
   },
 
@@ -167,7 +169,7 @@ export default {
         },
         {
           validate: (value) => {
-            if (this.asset.balance - value < 0) {
+            if (this.assetBalance - value < 0) {
               return `Withdraw amount exceeds balance`;
             }
           }

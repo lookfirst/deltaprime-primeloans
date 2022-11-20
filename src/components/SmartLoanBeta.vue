@@ -16,7 +16,7 @@
       </InfoBubble>
       <div class="main-content">
         <Block :bordered="true">
-          <Tabs>
+          <Tabs v-on:tabChange="tabChange" :open-tab-index="selectedTabIndex">
             <Tab :title="'Assets'"
                  :img-active="'src/assets/icons/assets_on.svg'"
                  :img-not-active="'src/assets/icons/assets_off.svg'">
@@ -46,6 +46,12 @@ import Farm from './Farm';
 import config from '../config';
 import redstone from 'redstone-api';
 import {formatUnits} from 'ethers/lib/utils';
+
+const ASSETS_PATH = 'assets';
+const FARMS_PATH = 'farms';
+
+const ASSETS_PATH_NAME = 'Prime Account Assets';
+const FARMS_PATH_NAME = 'Prime Account Farms';
 
 export default {
   name: 'SmartLoanBeta',
@@ -85,10 +91,12 @@ export default {
       totalValue: 0,
       health: 0,
       noSmartLoanInternal: null,
+      selectedTabIndex: 0,
     };
   },
 
   async mounted() {
+    this.setupSelectedTab();
     if (window.provider) {
       await this.fundsStoreSetup();
       await this.poolStoreSetup();
@@ -134,6 +142,28 @@ export default {
         this.health = this.getHealth;
       }
       this.$forceUpdate();
+    },
+
+    setupSelectedTab() {
+      const url = document.location.href;
+      const lastUrlPart = url.split('/').reverse()[0];
+      if (lastUrlPart !== ASSETS_PATH && lastUrlPart !== FARMS_PATH) {
+        this.$router.push({name: ASSETS_PATH_NAME});
+      } else {
+        if (lastUrlPart === ASSETS_PATH) {
+          this.selectedTabIndex = 0;
+        } else if (lastUrlPart === FARMS_PATH) {
+          this.selectedTabIndex = 1;
+        }
+      }
+    },
+
+    tabChange(tabIndex) {
+      if (tabIndex === 0) {
+        this.$router.push({name: ASSETS_PATH_NAME});
+      } else if (tabIndex === 1) {
+        this.$router.push({name: FARMS_PATH_NAME});
+      }
     },
   },
 };

@@ -165,15 +165,15 @@ export default {
 
     setupDefaultValidators() {
       const positiveValidator = {
-        validate: function (value) {
-          if (value <= 0) {
+        validate: (value) => {
+          if (this.internalValue <= 0) {
             return `Value must be higher than 0`;
           }
         }
       };
       const wrongFormatValidator = {
         validate: (value) => {
-          if (!this.internalValue.toString().match(/^[0-9.,]+$/)) {
+          if (this.internalValue && !this.internalValue.toString().match(/^[0-9.,]+$/)) {
             return `Incorrect formatting. Please use only alphanumeric values.`;
           }
         }
