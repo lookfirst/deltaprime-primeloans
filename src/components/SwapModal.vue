@@ -35,7 +35,7 @@
             Values after transaction:
           </div>
           <div class="summary__values">
-            <div class="summary__value_pair">
+            <div class="summary__value__pair">
               <div class="summary__label"
                    v-bind:class="{'summary__label--error': healthAfterTransaction > MIN_ALLOWED_HEALTH}">
                 Health Ratio:
@@ -51,7 +51,7 @@
               </div>
             </div>
             <div class="summary__divider divider--long"></div>
-            <div class="summary__value_pair">
+            <div class="summary__value__pair">
               <div class="summary__label">
                 {{ sourceAsset }} balance:
               </div>
@@ -63,7 +63,7 @@
             </div>
 
             <div class="summary__divider divider--long"></div>
-            <div class="summary__value_pair">
+            <div class="summary__value__pair">
               <div class="summary__label">
                 {{ targetAsset }} balance:
               </div>
@@ -76,7 +76,11 @@
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Swap'" v-on:click="submit()" :disabled="sourceInputError || targetInputError"></Button>
+        <Button :label="'Swap'"
+                v-on:click="submit()"
+                :disabled="sourceInputError || targetInputError"
+                :waiting="transactionOngoing">
+        </Button>
       </div>
     </Modal>
   </div>
@@ -123,6 +127,7 @@ export default {
       MIN_ALLOWED_HEALTH: config.MIN_ALLOWED_HEALTH,
       healthAfterTransaction: 0,
       assetBalances: [],
+      transactionOngoing: false,
     };
   },
 
@@ -141,6 +146,7 @@ export default {
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       this.$emit('SWAP', {
         sourceAsset: this.sourceAsset,
         targetAsset: this.targetAsset,

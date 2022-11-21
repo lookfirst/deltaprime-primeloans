@@ -123,7 +123,6 @@ export default {
         'createAndFundLoan',
         'setupSmartLoanContract',
         'getAllAssetsBalances',
-        'getDebts',
         'setAvailableAssetsValue',
         'updateFunds'
       ]),

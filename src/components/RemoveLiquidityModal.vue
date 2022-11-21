@@ -5,7 +5,11 @@
         Remove Liquidity
       </div>
 
-      <CurrencyInput :symbol="lpToken.primary" :symbol-secondary="lpToken.secondary" v-on:inputChange="inputChange"></CurrencyInput>
+      <CurrencyInput :symbol="lpToken.primary"
+                     :symbol-secondary="lpToken.secondary"
+                     v-on:newValue="inputChange"
+                     :validators="validators">
+      </CurrencyInput>
 
       <div class="transaction-summary-wrapper">
         <TransactionResultSummaryBeta>
@@ -13,22 +17,42 @@
             Values after transaction:
           </div>
           <div class="summary__values">
-            <div class="summary__label">
-              LP token balance: {{ lpTokenBalance - amount}}
+            <div class="summary__value__pair">
+              <div class="summary__label">
+                LP token balance:
+              </div>
+              <div class="summary__value">
+                {{ (lpTokenBalance - amount) > 0 ? lpTokenBalance - amount : 0}}
+              </div>
             </div>
-            <div class="summary__label">
-              {{ firstAsset.symbol }} balance: {{ formatTokenBalance(firstBalance + minReceivedFirst) }}
+            <div class="summary__divider divider--long"></div>
+            <div class="summary__value__pair">
+              <div class="summary__label">
+                {{ firstAsset.symbol }} balance:
+              </div>
+              <div class="summary__value">
+                {{ formatTokenBalance(firstBalance + minReceivedFirst) }}
+              </div>
             </div>
-            <div class="summary__divider"></div>
-            <div class="summary__label">
-              {{ secondAsset.symbol }} balance: {{ formatTokenBalance(secondBalance + minReceivedSecond) }}
+            <div class="summary__divider divider--long"></div>
+            <div class="summary__value__pair">
+              <div class="summary__label">
+                {{ secondAsset.symbol }} balance:
+              </div>
+              <div class="summary__value">
+                {{ formatTokenBalance(secondBalance + minReceivedSecond) }}
+              </div>
             </div>
           </div>
         </TransactionResultSummaryBeta>
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Remove liquidity'" v-on:click="submit()"></Button>
+        <Button :label="'Remove liquidity'"
+                v-on:click="submit()"
+                :waiting="transactionOngoing"
+                :disabled="currencyInputError">
+        </Button>
       </div>
     </Modal>
   </div>
@@ -41,10 +65,10 @@ import CurrencyInput from './CurrencyInput';
 import Button from './Button';
 import Toggle from './Toggle';
 import BarGaugeBeta from './BarGaugeBeta';
-import config from "../config";
-import {erc20ABI} from "../utils/blockchain";
-import {toWei} from "../utils/calculate";
-import {formatUnits} from "ethers/lib/utils";
+import config from '../config';
+import {erc20ABI} from '../utils/blockchain';
+import {toWei} from '../utils/calculate';
+import {formatUnits} from 'ethers/lib/utils';
 
 const ethers = require('ethers');
 
@@ -63,15 +87,17 @@ export default {
     lpToken: {},
     lpTokenBalance: Number,
     firstBalance: Number,
-    secondBalance: Number
+    secondBalance: Number,
   },
 
   data() {
     return {
       amount: null,
-      validators: {},
+      validators: [],
       minReceivedFirst: 0,
-      minReceivedSecond: 0
+      minReceivedSecond: 0,
+      transactionOngoing: false,
+      currencyInputError: false,
     };
   },
 
@@ -98,6 +124,7 @@ export default {
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       this.$emit('REMOVE_LIQUIDITY', {
         asset: this.lpToken.symbol,
         amount: this.amount,
@@ -106,8 +133,9 @@ export default {
       });
     },
 
-    async inputChange(change) {
-      this.amount = change;
+    async inputChange(event) {
+      this.amount = event.value;
+      this.currencyInputError = event.error;
       await this.calculateReceivedAmounts(this.amount);
     },
 
@@ -115,31 +143,36 @@ export default {
       this.validators = [
         {
           validate: (value) => {
-            if (value > this.getAvailableAssetAmount) {
+            if (value > this.lpTokenBalance) {
               return 'Exceeds account balance';
             }
           }
         }
-      ]
+      ];
     },
 
     async calculateReceivedAmounts(lpRemoved) {
-      //TODO: hardcoded slippage
-      const slippage = 0.005; // 0.5% slippage
+      if (this.lpTokenBalance - this.amount <= 0) {
+        this.minReceivedFirst = 0;
+        this.minReceivedSecond = 0;
+      } else {
+        //TODO: hardcoded slippage
+        const slippage = 0.005; // 0.5% slippage
 
-      const firstToken = new ethers.Contract(this.firstAsset.address, erc20ABI, provider.getSigner());
-      const secondToken = new ethers.Contract(this.secondAsset.address, erc20ABI, provider.getSigner());
-      const lpToken = new ethers.Contract(this.lpToken.address, erc20ABI, provider.getSigner());
+        const firstToken = new ethers.Contract(this.firstAsset.address, erc20ABI, provider.getSigner());
+        const secondToken = new ethers.Contract(this.secondAsset.address, erc20ABI, provider.getSigner());
+        const lpToken = new ethers.Contract(this.lpToken.address, erc20ABI, provider.getSigner());
 
-      const firstTokenBalance = await firstToken.balanceOf(this.lpToken.address);
-      const secondTokenBalance = await secondToken.balanceOf(this.lpToken.address);
-      const totalSupply = await lpToken.totalSupply();
+        const firstTokenBalance = await firstToken.balanceOf(this.lpToken.address);
+        const secondTokenBalance = await secondToken.balanceOf(this.lpToken.address);
+        const totalSupply = await lpToken.totalSupply();
 
-      const firstAmount = toWei(lpRemoved.toString()).mul(firstTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
-      const secondAmount = toWei(lpRemoved.toString()).mul(secondTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
+        const firstAmount = toWei(lpRemoved.toString()).mul(firstTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
+        const secondAmount = toWei(lpRemoved.toString()).mul(secondTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
 
-      this.minReceivedFirst = Number(formatUnits(firstAmount, this.firstAsset.decimals));
-      this.minReceivedSecond = Number(formatUnits(secondAmount, this.secondAsset.decimals));
+        this.minReceivedFirst = Number(formatUnits(firstAmount, this.firstAsset.decimals));
+        this.minReceivedSecond = Number(formatUnits(secondAmount, this.secondAsset.decimals));
+      }
     }
   }
 };

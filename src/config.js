@@ -7,6 +7,7 @@ export default {
     MAX_COLLATERAL: 500,
     MIN_ALLOWED_HEALTH: 0.2,
     COMPETITION_START_BLOCK: 14858534,
+    DECIMALS_PRECISION: 8,
     chainId: 43114,
     //update leverage after every change in contracts
     ASSETS_CONFIG: {

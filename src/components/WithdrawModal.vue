@@ -10,7 +10,7 @@
         <div class="top-info__value">
           {{ assetBalance | smartRound }}
           <span class="top-info__currency">
-            {{asset.symbol}}
+            {{ asset.symbol }}
           </span>
         </div>
       </div>
@@ -20,12 +20,14 @@
                      :symbol-secondary="asset.secondary"
                      v-on:newValue="withdrawValueChange"
                      :max="Number(asset.balance)"
-                     :validators="validators"></CurrencyInput>
+                     :validators="validators">
+      </CurrencyInput>
       <CurrencyInput v-else
                      :symbol="asset.symbol"
                      v-on:newValue="withdrawValueChange"
                      :max="Number(asset.balance)"
-                     :validators="validators"></CurrencyInput>
+                     :validators="validators">
+      </CurrencyInput>
 
       <div class="transaction-summary-wrapper">
         <TransactionResultSummaryBeta>
@@ -33,7 +35,8 @@
             Values after confirmation:
           </div>
           <div class="summary__values">
-            <div class="summary__label" v-bind:class="{'summary__label--error': healthAfterTransaction > MIN_ALLOWED_HEALTH}">
+            <div class="summary__label"
+                 v-bind:class="{'summary__label--error': healthAfterTransaction > MIN_ALLOWED_HEALTH}">
               Health Ratio:
             </div>
             <div class="summary__value">
@@ -50,8 +53,10 @@
               Balance:
             </div>
             <div class="summary__value">
-              {{ (Number(assetBalance) - Number(withdrawValue)) > 0 ? (Number(assetBalance) - Number(withdrawValue)) : 0 | smartRound }}
-              {{ isLP ? asset.primary + '-' + asset.secondary : asset.symbol  }}
+              {{
+                (Number(assetBalance) - Number(withdrawValue)) > 0 ? (Number(assetBalance) - Number(withdrawValue)) : 0 | smartRound
+              }}
+              {{ isLP ? asset.primary + '-' + asset.secondary : asset.symbol }}
             </div>
           </div>
         </TransactionResultSummaryBeta>
@@ -62,7 +67,11 @@
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Withdraw'" v-on:click="submit()" :disabled="currencyInputError"></Button>
+        <Button :label="'Withdraw'"
+                v-on:click="submit()"
+                :disabled="currencyInputError"
+                :waiting="transactionOngoing">
+        </Button>
       </div>
     </Modal>
   </div>
@@ -76,7 +85,7 @@ import Button from './Button';
 import Toggle from './Toggle';
 import BarGaugeBeta from './BarGaugeBeta';
 import config from '../config';
-import {calculateHealth} from "../utils/calculate";
+import {calculateHealth} from '../utils/calculate';
 
 export default {
   name: 'WithdrawModal',
@@ -103,7 +112,8 @@ export default {
       currencyInputError: false,
       MIN_ALLOWED_HEALTH: config.MIN_ALLOWED_HEALTH,
       selectedWithdrawAsset: 'AVAX',
-      isLP: false
+      isLP: false,
+      transactionOngoing: false,
     };
   },
 
@@ -122,6 +132,7 @@ export default {
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       let withdrawEvent = {};
       if (this.asset.symbol === 'AVAX') {
         withdrawEvent = {
@@ -148,7 +159,7 @@ export default {
     calculateHealthAfterTransaction() {
       if (this.withdrawValue) {
         this.healthAfterTransaction = calculateHealth(this.loan - this.repayValue,
-            this.thresholdWeightedValue - this.repayValue * this.asset.price * this.asset.maxLeverage);
+          this.thresholdWeightedValue - this.repayValue * this.asset.price * this.asset.maxLeverage);
       } else {
         this.healthAfterTransaction = this.health;
       }

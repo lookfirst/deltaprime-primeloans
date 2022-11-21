@@ -46,7 +46,11 @@
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Unstake'" v-on:click="submit()"></Button>
+        <Button :label="'Unstake'"
+                v-on:click="submit()"
+                :waiting="transactionOngoing"
+                :disabled="currencyInputError">
+        </Button>
       </div>
     </Modal>
   </div>
@@ -79,7 +83,9 @@ export default {
   data() {
     return {
       unstakeValue: 0,
-      validators: []
+      validators: [],
+      transactionOngoing: false,
+      currencyInputError: false,
     }
   },
 
@@ -100,11 +106,13 @@ export default {
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       this.$emit('UNSTAKE', this.unstakeValue);
     },
 
     unstakeValueChange(event) {
       this.unstakeValue = event.value;
+      this.currencyInputError = event.error;
     },
 
     setupValidators() {

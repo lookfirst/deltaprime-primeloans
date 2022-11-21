@@ -79,6 +79,7 @@ import WithdrawModal from "./WithdrawModal";
 const ethers = require('ethers');
 import {erc20ABI} from "../utils/blockchain";
 import {fromWei} from "../utils/calculate";
+import addresses from '../../common/addresses/avax/token_addresses.json';
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -112,7 +113,7 @@ export default {
 
   computed: {
     ...mapState('fundsStore', ['health', 'lpBalances', 'smartLoanContract', 'fullLoanStatus', 'assetBalances']),
-    ...mapState('network', ['provider']),
+    ...mapState('network', ['provider', 'account']),
 
     hasSmartLoanContract() {
       return this.smartLoanContract && this.smartLoanContract.address !== NULL_ADDRESS;
@@ -204,16 +205,18 @@ export default {
     },
 
     //TODO: duplicated code
-    openAddFromWalletModal() {
+    async openAddFromWalletModal() {
       const modalInstance = this.openModal(AddFromWalletModal);
       modalInstance.asset = this.lpToken;
+      modalInstance.assetBalance = this.lpBalances[this.lpToken.symbol];
       modalInstance.loan = this.debt;
       modalInstance.thresholdWeightedValue = this.thresholdWeightedValue;
       modalInstance.isLP = true;
+      modalInstance.walletAssetBalance = await this.getWalletLpTokenBalance();
       modalInstance.$on('ADD_FROM_WALLET', addFromWalletEvent => {
         if (this.smartLoanContract) {
               const fundRequest = {
-                value: String(addFromWalletEvent.value),
+                value: addFromWalletEvent.value.toFixed(config.DECIMALS_PRECISION),
                 asset: this.lpToken.symbol,
                 assetDecimals: config.LP_ASSETS_CONFIG[this.lpToken.symbol].decimals,
               };
@@ -233,7 +236,7 @@ export default {
       modalInstance.isLP = true;
       modalInstance.$on('WITHDRAW', withdrawEvent => {
         const withdrawRequest = {
-          value: String(withdrawEvent.value),
+          value: withdrawEvent.value.toFixed(config.DECIMALS_PRECISION),
           asset: this.lpToken.symbol,
           assetDecimals: config.LP_ASSETS_CONFIG[this.lpToken.symbol].decimals
         }
@@ -256,8 +259,8 @@ export default {
             symbol: this.lpToken.symbol,
             firstAsset: this.lpToken.primary,
             secondAsset: this.lpToken.secondary,
-            firstAmount: provideLiquidityEvent.firstAmount,
-            secondAmount: provideLiquidityEvent.secondAmount,
+            firstAmount: provideLiquidityEvent.firstAmount.toFixed(config.DECIMALS_PRECISION),
+            secondAmount: provideLiquidityEvent.secondAmount.toFixed(config.DECIMALS_PRECISION),
             dex: this.lpToken.dex
         };
           this.handleTransaction(this.provideLiquidity, {lpRequest: lpRequest}).then(() => {
@@ -280,8 +283,8 @@ export default {
           symbol: this.lpToken.symbol,
           firstAsset: this.lpToken.primary,
           secondAsset: this.lpToken.secondary,
-          minFirstAmount: removeEvent.minReceivedFirst,
-          minSecondAmount: removeEvent.minReceivedSecond,
+          minFirstAmount: removeEvent.minReceivedFirst.toFixed(config.DECIMALS_PRECISION),
+          minSecondAmount: removeEvent.minReceivedSecond.toFixed(config.DECIMALS_PRECISION),
           assetDecimals: config.LP_ASSETS_CONFIG[this.lpToken.symbol].decimals,
           dex: this.lpToken.dex
         }
@@ -295,7 +298,12 @@ export default {
     async setupPoolBalance() {
       const lpTokenContract = new ethers.Contract(this.lpToken.address, erc20ABI, provider);
       this.poolBalance = fromWei(await lpTokenContract.totalSupply());
-    }
+    },
+
+    async getWalletLpTokenBalance() {
+      const tokenContract = new ethers.Contract(this.lpToken.address, erc20ABI, this.provider.getSigner());
+      return await this.getWalletTokenBalance(this.account, this.lpToken.symbol, tokenContract, true);
+    },
   },
 };
 </script>

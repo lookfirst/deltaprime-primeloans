@@ -1,11 +1,12 @@
 import {mapState} from 'vuex';
 import config from "@/config";
-import {Contract} from "ethers";
+import ethers, {Contract} from "ethers";
 import EXCHANGETUP from '@artifacts/contracts/proxies/tup/avalanche/PangolinIntermediaryTUP.sol/PangolinIntermediaryTUP.json';
 import EXCHANGE from '@artifacts/contracts/integrations/avalanche/PangolinIntermediary.sol/PangolinIntermediary.json'
 import {acceptableSlippage, formatUnits, parseUnits} from "../utils/calculate";
-import {handleCall, handleTransaction, isOracleError, isPausedError} from "../utils/blockchain";
+import {erc20ABI, handleCall, handleTransaction, isOracleError, isPausedError} from '../utils/blockchain';
 import Vue from 'vue';
+import addresses from '../../common/addresses/avax/token_addresses.json';
 
 export default {
   methods: {
@@ -125,6 +126,17 @@ export default {
     getAssetIcon(assetSymbol) {
       const asset = config.ASSETS_CONFIG[assetSymbol];
       return `src/assets/logo/${assetSymbol.toLowerCase()}.${asset.logoExt ? asset.logoExt : 'svg'}`;
+    },
+
+    async getWalletTokenBalance(account, assetSymbol, tokenContract, isLP) {
+      const walletAssetBalanceResponse = await tokenContract.balanceOf(account);
+      let walletAssetBalance;
+      if (!isLP) {
+        walletAssetBalance = formatUnits(walletAssetBalanceResponse, config.ASSETS_CONFIG[assetSymbol].decimals);
+      } else {
+        walletAssetBalance = formatUnits(walletAssetBalanceResponse, config.LP_ASSETS_CONFIG[assetSymbol].decimals);
+      }
+      return Number(walletAssetBalance);
     },
   },
   computed: {

@@ -48,7 +48,7 @@
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Borrow'" v-on:click="submit()" :disabled="currencyInputError"></Button>
+        <Button :label="'Borrow'" v-on:click="submit()" :disabled="currencyInputError" :waiting="transactionOngoing"></Button>
       </div>
     </Modal>
   </div>
@@ -88,8 +88,9 @@ export default {
       healthAfterTransaction: 0,
       validators: [],
       currencyInputError: false,
+      transactionOngoing: false,
       MIN_ALLOWED_HEALTH: config.MIN_ALLOWED_HEALTH,
-      MAX_POOL_UTILISATION: config.MAX_POOL_UTILISATION,
+      MAX_POOL_UTILISATION: config.MAX_POOL_UTILISATION
     };
   },
 
@@ -102,6 +103,7 @@ export default {
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       this.$emit('BORROW', this.value);
     },
 

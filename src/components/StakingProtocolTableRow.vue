@@ -115,7 +115,7 @@ export default {
       modalInstance.$on('STAKE', (stakeValue) => {
         const stakeRequest = {
           symbol: this.farm.feedSymbol,
-          amount: stakeValue,
+          amount: stakeValue.toFixed(config.DECIMALS_PRECISION),
           method: this.farm.stakeMethod,
           decimals: this.asset.decimals
         };
@@ -140,7 +140,7 @@ export default {
       modalInstance.isLP = this.asset.secondary !== null;
       modalInstance.$on('UNSTAKE', (unstakeValue) => {
         const unstakeRequest = {
-          amount: unstakeValue,
+          amount: unstakeValue.toFixed(config.DECIMALS_PRECISION),
           minAmount: this.farm.minAmount * unstakeValue,
           method: this.farm.unstakeMethod,
           decimals: this.asset.decimals

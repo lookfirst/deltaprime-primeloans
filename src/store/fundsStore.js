@@ -40,8 +40,6 @@ export default {
     usdcTokenContract: null,
     assetBalances: null,
     lpBalances: null,
-    avaxDebt: null,
-    usdcDebt: null,
     debt: null,
     totalValue: null,
     thresholdWeightedValue: null,
@@ -49,7 +47,8 @@ export default {
     fullLoanStatus: {},
     noSmartLoan: null,
     protocolPaused: false,
-    oracleError: false
+    oracleError: false,
+    debtsPerAsset: null,
   },
   mutations: {
     setSmartLoanContract(state, smartLoanContract) {
@@ -88,14 +87,6 @@ export default {
       state.lpBalances = lpBalances;
     },
 
-    setAvaxDebt(state, avaxDebt) {
-      state.avaxDebt = avaxDebt;
-    },
-
-    setUsdcDebt(state, debt) {
-      state.usdcDebt = debt;
-    },
-
     setFullLoanStatus(state, status) {
       state.fullLoanStatus = status;
     },
@@ -110,7 +101,11 @@ export default {
 
     setOracleError(state, error) {
       state.oracleError = error;
-    }
+    },
+
+    setDebtsPerAsset(state, debtsPerAsset) {
+      state.debtsPerAsset = debtsPerAsset;
+    },
   },
 
   getters: {
@@ -138,7 +133,7 @@ export default {
           if (isPausedError(e)) await commit('setProtocolPaused', true);
         }
         await dispatch('getAllAssetsBalances');
-        await dispatch('getDebts');
+        await dispatch('getDebtsPerAsset');
         try {
           await dispatch('getFullLoanStatus');
         } catch (e) {
@@ -158,7 +153,7 @@ export default {
       await dispatch('setupAssets');
       await dispatch('setupLpAssets');
       await dispatch('getAllAssetsBalances');
-      await dispatch('getDebts');
+      await dispatch('getDebtsPerAsset');
       await dispatch('getFullLoanStatus');
       setTimeout(async () => {
         await dispatch('getFullLoanStatus');
@@ -295,16 +290,15 @@ export default {
       await commit('setLpBalances', lpBalances);
     },
 
-    async getDebts({state, commit}) {
+    async getDebtsPerAsset({state, commit}) {
+      const debtsPerAsset = {};
       const debts = await state.smartLoanContract.getDebts();
       debts.forEach(debt => {
-        const debtAsset = fromBytes32(debt.name);
-        if (debtAsset === 'AVAX') {
-          commit('setAvaxDebt', formatUnits(debt.debt, config.ASSETS_CONFIG[debtAsset].decimals));
-        } else if (debtAsset === 'USDC') {
-          commit('setUsdcDebt', formatUnits(debt.debt, config.ASSETS_CONFIG[debtAsset].decimals));
-        }
+        const asset = fromBytes32(debt.name);
+        const debtValue = formatUnits(debt.debt, config.ASSETS_CONFIG[asset].decimals);
+        debtsPerAsset[asset] = {asset: asset, debt: debtValue};
       });
+      commit('setDebtsPerAsset', debtsPerAsset);
     },
 
     async getFullLoanStatus({state, commit}) {
@@ -501,7 +495,7 @@ export default {
       await awaitConfirmation(transaction, provider, 'repay');
       setTimeout(async () => {
         await dispatch('updateFunds');
-        await dispatch('poolStore/setupPools');
+        await dispatch('poolStore/setupPools', {}, {root: true});
       }, 1000);
     },
 

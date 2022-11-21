@@ -29,8 +29,18 @@
         </div>
       </div>
 
-      <CurrencyInput v-if="isLP" :symbol="asset.primary" :symbol-secondary="asset.secondary" v-on:inputChange="inputChange"></CurrencyInput>
-      <CurrencyInput ref="currencyInput" v-else :symbol="asset.symbol" v-on:newValue="inputChange" :validators="validators"></CurrencyInput>
+      <CurrencyInput v-if="isLP"
+                     :symbol="asset.primary"
+                     :symbol-secondary="asset.secondary"
+                     v-on:newValue="inputChange"
+                     :validators="validators">
+      </CurrencyInput>
+      <CurrencyInput ref="currencyInput"
+                     v-else
+                     :symbol="asset.symbol"
+                     v-on:newValue="inputChange"
+                     :validators="validators">
+      </CurrencyInput>
 
       <div class="transaction-summary-wrapper">
         <TransactionResultSummaryBeta>
@@ -61,7 +71,11 @@
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Add funds'" v-on:click="submit()" :disabled="validationError"></Button>
+        <Button :label="'Add funds'"
+                v-on:click="submit()"
+                :disabled="validationError"
+                :waiting="transactionOngoing">
+        </Button>
       </div>
     </Modal>
   </div>
@@ -97,7 +111,8 @@ export default {
     isLP: false,
     walletAssetBalance: {},
     walletNativeTokenBalance: {},
-    noSmartLoan: false
+    noSmartLoan: false,
+    transactionOngoing: false
   },
 
   data() {
@@ -134,6 +149,7 @@ export default {
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       if (this.asset.symbol === 'AVAX') {
         this.$emit('ADD_FROM_WALLET', {value: this.value, asset: this.selectedDepositAsset});
       } else {
@@ -143,8 +159,8 @@ export default {
 
     inputChange(changeEvent) {
       this.value = changeEvent.value;
+      this.validationError = changeEvent.error;
       this.calculateHealthAfterTransaction();
-      this.validationError = changeEvent.error
     },
 
     calculateHealthAfterTransaction() {

@@ -88,7 +88,9 @@ export function sleep(ms) {
 }
 
 export function isPausedError(e) {
-    return e.data.message.includes("ProtocolUpgrade: paused");
+    if (e && e.data && e.data.message) {
+        return e.data.message.includes("ProtocolUpgrade: paused");
+    }
 }
 
 export function isOracleError(e) {
