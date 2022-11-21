@@ -13,18 +13,18 @@
         3. Deploy the account<br/>
       </div>
       <div class="modal-top-info" v-if="noSmartLoan && selectedDepositAsset !== 'AVAX'">You need to confirm 2 transactions in Metamask:<br/>
-        1. Approve {{asset.symbol}}<br/>
+        1. Approve {{asset.name}}<br/>
         2. Deploy account<br/>
       </div>
       <div class="modal-top-info">
         <div class="top-info__label">Available:</div>
         <div class="top-info__value">
           {{ getAvailableAssetAmount | smartRound }}
-          <span v-if="asset.symbol === 'AVAX'" class="top-info__currency">
+          <span v-if="asset.name === 'AVAX'" class="top-info__currency">
             {{selectedDepositAsset}}
           </span>
-          <span v-if="asset.symbol !== 'AVAX'" class="top-info__currency">
-            {{asset.symbol}}
+          <span v-if="asset.name !== 'AVAX'" class="top-info__currency">
+            {{asset.name}}
           </span>
         </div>
       </div>

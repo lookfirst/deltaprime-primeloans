@@ -10,7 +10,7 @@
         <div class="top-info__value">
           {{ assetBalance | smartRound }}
           <span class="top-info__currency">
-            {{ asset.symbol }}
+            {{ asset.name }}
           </span>
         </div>
       </div>
@@ -56,13 +56,13 @@
               {{
                 (Number(assetBalance) - Number(withdrawValue)) > 0 ? (Number(assetBalance) - Number(withdrawValue)) : 0 | smartRound
               }}
-              {{ isLP ? asset.primary + '-' + asset.secondary : asset.symbol }}
+              {{ isLP ? asset.primary + '-' + asset.secondary : asset.name }}
             </div>
           </div>
         </TransactionResultSummaryBeta>
       </div>
 
-      <div class="toggle-container" v-if="asset.symbol === 'AVAX'">
+      <div class="toggle-container" v-if="asset.name === 'AVAX'">
         <Toggle v-on:change="assetToggleChange" :options="['AVAX', 'WAVAX']"></Toggle>
       </div>
 
