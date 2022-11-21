@@ -37,6 +37,10 @@ export default {
       return value !== null ? String(Math.round(value * precisionMultiplier) / precisionMultiplier) : '';
     },
 
+    formatPercent(value) {
+      return `${Math.round(value * 10000) / 100}%`
+    },
+
     async handleTransaction(fun, args, onSuccess, onFail) {
       if (!onFail) onFail = async (e) => await this.handleError(e);
       await handleTransaction(fun, args, onSuccess, onFail);
