@@ -30,7 +30,7 @@
       </div>
 
       <div class="table__cell table__cell--double-value loan">
-        {{ `${((lpBalances && lpBalances[lpToken.symbol] && poolBalance) ? formatTokenBalance(lpBalances[lpToken.symbol] * 100 / poolBalance)  : 0)}%`  }}
+        {{ tvl | usd }}
       </div>
 
       <div class="table__cell">
@@ -80,6 +80,7 @@ const ethers = require('ethers');
 import {erc20ABI} from "../utils/blockchain";
 import {fromWei} from "../utils/calculate";
 import addresses from '../../common/addresses/avax/token_addresses.json';
+import {formatUnits, parseUnits} from "ethers/lib/utils";
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -100,6 +101,7 @@ export default {
 
   async mounted() {
     this.setupActionsConfiguration();
+    await this.setupTvl();
   },
 
   data() {
@@ -107,7 +109,8 @@ export default {
       actionsConfig: null,
       showChart: false,
       rowExpanded: false,
-      poolBalance: 0
+      poolBalance: 0,
+      tvl: 0
     };
   },
 
@@ -298,6 +301,16 @@ export default {
     async setupPoolBalance() {
       const lpTokenContract = new ethers.Contract(this.lpToken.address, erc20ABI, provider);
       this.poolBalance = fromWei(await lpTokenContract.totalSupply());
+    },
+
+    async setupTvl() {
+      const firstTokenContract = new ethers.Contract(addresses[this.lpToken.primary], erc20ABI, this.provider);
+      const secondTokenContract = new ethers.Contract(addresses[this.lpToken.secondary], erc20ABI, this.provider);
+
+      let valueOfFirst = formatUnits(await firstTokenContract.balanceOf(this.lpToken.address), config.ASSETS_CONFIG[this.lpToken.primary].decimals) * config.ASSETS_CONFIG[this.lpToken.primary].price;
+      let valueOfSecond = formatUnits(await secondTokenContract.balanceOf(this.lpToken.address), config.ASSETS_CONFIG[this.lpToken.primary].secondary) * config.ASSETS_CONFIG[this.lpToken.secondary].price;
+
+      this.tvl = valueOfFirst + valueOfSecond;
     },
 
     async getWalletLpTokenBalance() {

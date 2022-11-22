@@ -21,11 +21,11 @@
     <div class="lp-tokens">
       <div class="filters">
         <div class="filter-container">
-          <div class="filter__label">Assets:</div>
+          <div class="filter__label">Filter by assets:</div>
           <AssetFilter :asset-options="lpAssetsFilterOptions" v-on:filterChange="selectLpTokens"></AssetFilter>
         </div>
         <div class="filter-container">
-          <div class="filter__label">DEX:</div>
+          <div class="filter__label">Filter by DEX:</div>
 
           <DexFilter :dex-options="lpDexFilterOptions" v-on:filterChange="selectDexes"></DexFilter>
         </div>
@@ -269,10 +269,10 @@ export default {
             id: 'BALANCE'
           },
           {
-            label: 'Share',
+            label: 'TVL',
             sortable: false,
             class: 'balance',
-            id: 'SHARE'
+            id: 'tvl'
           },
           {
             label: 'APR',

@@ -2,7 +2,7 @@
   <div class="stake-beta-component">
     <div class="filters">
       <div class="filter-container">
-        <div class="filter__label">Assets:</div>
+        <div class="filter__label">Filter by assets:</div>
         <AssetFilter :asset-options="assetsFilterOptions" v-on:filterChange="selectAssets"></AssetFilter>
       </div>
     </div>
