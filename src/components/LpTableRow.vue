@@ -101,7 +101,6 @@ export default {
 
   async mounted() {
     this.setupActionsConfiguration();
-    await this.setupTvl();
   },
 
   data() {
@@ -115,7 +114,7 @@ export default {
   },
 
   computed: {
-    ...mapState('fundsStore', ['health', 'lpBalances', 'smartLoanContract', 'fullLoanStatus', 'assetBalances']),
+    ...mapState('fundsStore', ['health', 'lpBalances', 'smartLoanContract', 'fullLoanStatus', 'assetBalances', 'assets']),
     ...mapState('network', ['provider', 'account']),
 
     hasSmartLoanContract() {
@@ -137,7 +136,14 @@ export default {
           await this.setupPoolBalance();
         }
       }
-    }
+    },
+    assets: {
+      handler(assets) {
+        if (assets) {
+          this.setupTvl();
+        }
+      },
+    },
   },
 
   methods: {
@@ -307,10 +313,15 @@ export default {
       const firstTokenContract = new ethers.Contract(addresses[this.lpToken.primary], erc20ABI, this.provider);
       const secondTokenContract = new ethers.Contract(addresses[this.lpToken.secondary], erc20ABI, this.provider);
 
-      let valueOfFirst = formatUnits(await firstTokenContract.balanceOf(this.lpToken.address), config.ASSETS_CONFIG[this.lpToken.primary].decimals) * config.ASSETS_CONFIG[this.lpToken.primary].price;
-      let valueOfSecond = formatUnits(await secondTokenContract.balanceOf(this.lpToken.address), config.ASSETS_CONFIG[this.lpToken.primary].secondary) * config.ASSETS_CONFIG[this.lpToken.secondary].price;
+      let priceFirst = this.assets[this.lpToken.primary].price;
+      let priceSecond = this.assets[this.lpToken.secondary].price;
 
-      this.tvl = valueOfFirst + valueOfSecond;
+      if (priceFirst && priceSecond) {
+        let valueOfFirst = formatUnits(await firstTokenContract.balanceOf(this.lpToken.address), config.ASSETS_CONFIG[this.lpToken.primary].decimals) * config.ASSETS_CONFIG[this.lpToken.primary].price;
+        let valueOfSecond = formatUnits(await secondTokenContract.balanceOf(this.lpToken.address), config.ASSETS_CONFIG[this.lpToken.primary].secondary) * config.ASSETS_CONFIG[this.lpToken.secondary].price;
+
+        this.tvl = valueOfFirst + valueOfSecond;
+      }
     },
 
     async getWalletLpTokenBalance() {

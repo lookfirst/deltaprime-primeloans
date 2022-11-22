@@ -45,14 +45,11 @@
 import NameValueBadgeBeta from './NameValueBadgeBeta';
 import config from '../config';
 import AssetsTableRow from './AssetsTableRow';
-import BorrowModal from './BorrowModal';
-import {mapState, mapActions} from 'vuex';
+import {mapActions, mapState} from 'vuex';
 import redstone from 'redstone-api';
 import Vue from 'vue';
 import Loader from './Loader';
-import {fromWei, formatUnits} from '../utils/calculate';
-import SwapModal from './SwapModal';
-import {fetchCollateralFromPayments} from '../utils/graph';
+import {formatUnits} from '../utils/calculate';
 import TableHeader from './TableHeader';
 import AssetFilter from './AssetFilter';
 import DoubleAssetIcon from './DoubleAssetIcon';
