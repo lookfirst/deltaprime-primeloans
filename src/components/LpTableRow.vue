@@ -18,7 +18,7 @@
         <template v-if="lpBalances">
           <div class="double-value__pieces">
             <LoadedValue :check="() => lpBalances[lpToken.symbol] != null"
-                         :value="formatTokenBalance(lpBalances[lpToken.symbol], 10)"></LoadedValue>
+                         :value="formatTokenBalance(lpBalances[lpToken.symbol], 10, true)"></LoadedValue>
           </div>
           <div class="double-value__usd">
             <span v-if="lpBalances[lpToken.symbol]">{{ lpBalances[lpToken.symbol] * lpToken.price | usd }}</span>

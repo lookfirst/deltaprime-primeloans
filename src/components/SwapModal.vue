@@ -12,8 +12,7 @@
       </CurrencyComboInput>
       <div class="asset-info">
         Available:
-        <span v-if="sourceAssetBalance" class="asset-info__value">{{ sourceAssetBalance }}</span>
-        <span v-if="!sourceAssetBalance" class="asset-info__value">0</span>
+        <span v-if="sourceAssetBalance" class="asset-info__value">{{ Number(sourceAssetBalance) | smartRound }}</span>
       </div>
 
       <div class="reverse-swap-button">
@@ -229,7 +228,8 @@ export default {
     },
 
     calculateSourceAssetBalance() {
-      this.sourceAssetBalance = config.ASSETS_CONFIG[this.sourceAsset].balance;
+      const sourceAssetBalance = this.assetBalances[this.sourceAsset];
+      this.sourceAssetBalance = sourceAssetBalance;
     },
 
     reverseSwap() {

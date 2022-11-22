@@ -268,6 +268,10 @@ export default {
         await dispatch('updateFunds');
         await dispatch('network/updateBalance', {}, {root: true});
       }, 5000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async getAllAssetsBalances({state, commit}) {
@@ -343,6 +347,10 @@ export default {
         await dispatch('updateFunds');
         await dispatch('network/updateBalance', {}, {root: true});
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async fundNativeToken({state, rootState, commit, dispatch}, {value}) {
@@ -367,6 +375,10 @@ export default {
         await dispatch('updateFunds');
         await dispatch('network/updateBalance', {}, {root: true});
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async withdraw({state, rootState, commit, dispatch}, {withdrawRequest}) {
@@ -383,6 +395,10 @@ export default {
       setTimeout(async () => {
         await dispatch('updateFunds');
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async withdrawNativeToken({state, rootState, commit, dispatch}, {withdrawRequest}) {
@@ -431,6 +447,10 @@ export default {
       setTimeout(async () => {
         await dispatch('updateFunds');
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async removeLiquidity({state, rootState, commit, dispatch}, {removeRequest}) {
@@ -461,6 +481,10 @@ export default {
       setTimeout(async () => {
         await dispatch('updateFunds');
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async borrow({state, rootState, commit, dispatch}, {borrowRequest}) {
@@ -480,6 +504,10 @@ export default {
         await dispatch('updateFunds');
         await dispatch('poolStore/setupPools');
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async repay({state, rootState, commit, dispatch}, {repayRequest}) {
@@ -497,6 +525,10 @@ export default {
         await dispatch('updateFunds');
         await dispatch('poolStore/setupPools', {}, {root: true});
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
 
     async swap({state, rootState, commit, dispatch}, {swapRequest}) {
@@ -520,6 +552,10 @@ export default {
       setTimeout(async () => {
         await dispatch('updateFunds');
       }, 1000);
+
+      setTimeout(async () => {
+        await dispatch('updateFunds');
+      }, 30000);
     },
   }
 };
