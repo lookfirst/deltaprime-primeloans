@@ -6,9 +6,10 @@ import TOKEN_MANANGER from '@contracts/TokenManager.json';
 import {formatUnits, fromWei, parseUnits, toWei} from '@/utils/calculate';
 import config from '@/config';
 import redstone from 'redstone-api';
-import {BigNumber} from 'ethers';
+import {BigNumber, Contract} from 'ethers';
 import TOKEN_ADDRESSES from '../../common/addresses/avax/token_addresses.json';
 import {mergeArrays} from '../utils/calculate';
+import INTERMEDIARY from '@artifacts/contracts/integrations/UniswapV2Intermediary.sol/UniswapV2Intermediary.json';
 
 const toBytes32 = require('ethers').utils.formatBytes32String;
 const fromBytes32 = require('ethers').utils.parseBytes32String;
@@ -540,10 +541,31 @@ export default {
         [swapRequest.targetAsset]
       ]);
 
-      const transaction = await (await wrapContract(state.smartLoanContract, loanAssets)).swapPangolin(
+      let amount = parseUnits(String(swapRequest.sourceAmount), config.ASSETS_CONFIG[swapRequest.sourceAsset].decimals);
+      //TODO: optimize and use YakSwap
+      let estimatedReceivedTokens = toWei("0");
+      let chosenDex;
+
+      for (let dex in config.DEX_CONFIG) {
+        const intermediary = new Contract(config.DEX_CONFIG[dex].intermediaryAddress, INTERMEDIARY.abi, provider.getSigner());
+
+        const whitelistedTokens = await intermediary.getAllWhitelistedTokens();
+        const areWhitelisted = whitelistedTokens.includes(tokenAddresses[swapRequest.sourceAsset]) && whitelistedTokens.includes(tokenAddresses[swapRequest.targetAsset]);
+
+        if (areWhitelisted) {
+          let receivedAmount = await intermediary.getMaximumTokensReceived(amount, tokenAddresses[swapRequest.sourceAsset], tokenAddresses[swapRequest.targetAsset]);
+
+          if (receivedAmount.gt(estimatedReceivedTokens)) {
+            estimatedReceivedTokens = receivedAmount;
+            chosenDex = dex;
+          }
+        }
+      }
+
+      const transaction = await (await wrapContract(state.smartLoanContract, loanAssets))[config.DEX_CONFIG[chosenDex].swapMethod](
         toBytes32(swapRequest.sourceAsset),
         toBytes32(swapRequest.targetAsset),
-        parseUnits(String(swapRequest.sourceAmount), config.ASSETS_CONFIG[swapRequest.sourceAsset].decimals),
+        amount,
         parseUnits(String(0), config.ASSETS_CONFIG[swapRequest.targetAsset].decimals),
         {gasLimit: 8000000}
       );

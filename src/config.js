@@ -2,6 +2,8 @@ import addresses from '../common/addresses/avax/token_addresses.json';
 import {vectorFinanceApy, vectorFinanceBalance, yieldYakApy, yieldYakBalance} from "./utils/calculate";
 import WAVAX_POOL_TUP from '@contracts/WavaxPoolTUP.json';
 import USDC_POOL_TUP from '@contracts/UsdcPoolTUP.json';
+import PANGOLIN_INTERMEDIARY_TUP from '@contracts/PangolinIntermediaryTUP.json';
+import TRADERJOE_INTERMEDIARY_TUP from '@contracts/TraderJoeIntermediaryTUP.json';
 
 export default {
     MAX_COLLATERAL: 500,
@@ -44,11 +46,15 @@ export default {
     },
     DEX_CONFIG: {
         'Pangolin': {
+            intermediaryAddress: PANGOLIN_INTERMEDIARY_TUP.address,
+            swapMethod: 'swapPangolin',
             addLiquidityMethod: 'addLiquidityPangolin',
             removeLiquidityMethod: 'removeLiquidityPangolin',
             logo: 'png.png'
         },
         'TraderJoe': {
+            intermediaryAddress: TRADERJOE_INTERMEDIARY_TUP.address,
+            swapMethod: 'swapTraderJoe',
             addLiquidityMethod: 'addLiquidityTraderJoe',
             removeLiquidityMethod: 'removeLiquidityTraderJoe',
             logo: 'joe.png'

@@ -95,7 +95,5 @@ export function isPausedError(e) {
 
 export function isOracleError(e) {
     const ORACLE_ERROR = "0x2b13aef500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003";
-    console.log('isOracleError')
-    console.log(e.data.data)
-    return e.data.data.includes(ORACLE_ERROR);
+    return e.data && e.data.data && e.data.data.includes(ORACLE_ERROR);
 }
