@@ -53,7 +53,7 @@
       </div>
 
       <div class="button-wrapper">
-        <Button :label="'Deposit'" v-on:click="submit()"></Button>
+        <Button :label="'Deposit'" v-on:click="submit()" :waiting="transactionOngoing"></Button>
       </div>
     </Modal>
   </div>
@@ -88,6 +88,7 @@ export default {
       depositValue: 0,
       selectedDepositAsset: 'AVAX',
       validators: [],
+      transactionOngoing: false,
     };
   },
 
@@ -107,6 +108,7 @@ export default {
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       const depositEvent = {
         value: this.depositValue,
         depositNativeToken: this.assetSymbol === 'AVAX' && this.selectedDepositAsset === 'AVAX',

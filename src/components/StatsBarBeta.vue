@@ -3,7 +3,10 @@
     <div class="stats-bar">
       <stats-bar-element-beta :label="'Total value'" :value="totalValue ? totalValue : 0 | usd">
       </stats-bar-element-beta>
-      <stats-bar-element-beta v-if="health != null" :label="'Health'" :value="health | percent">
+      <div class="health-loader-container" v-if="noSmartLoan === null">
+        <vue-loaders-ball-beat color="#A6A3FF" scale="1"></vue-loaders-ball-beat>
+      </div>
+      <stats-bar-element-beta v-if="noSmartLoan !== null && health != null" :label="'Health'" :value="health | percent">
         <bar-gauge-beta :min="0" :max="1" :value="health"></bar-gauge-beta>
       </stats-bar-element-beta>
 
@@ -27,7 +30,8 @@ export default {
   props: {
     totalValue: null,
     debt: null,
-    health: null
+    health: null,
+    noSmartLoan: null,
   },
   computed: {
   }
@@ -51,6 +55,14 @@ export default {
   .total-value-extra {
     font-size: $font-size-sm;
     margin-bottom: 19px;
+  }
+
+  .health-loader-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 92px;
   }
 }
 </style>

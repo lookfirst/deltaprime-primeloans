@@ -4,7 +4,8 @@
       <StatsBarBeta
         :total-value="noSmartLoanInternal ? 0 : totalValue"
         :debt="noSmartLoanInternal ? 0 : debt"
-        :health="noSmartLoanInternal ? 0 : health">
+        :health="noSmartLoanInternal ? 0 : health"
+        :noSmartLoan="noSmartLoanInternal">
       </StatsBarBeta>
       <InfoBubble v-if="noSmartLoanInternal === true" cacheKey="ACCOUNT-INIT" style="margin-top: 40px">
         To unlock borrowing, add tokens with <img style="transform: translateY(-2px);" src="src/assets/icons/plus.svg"> button.<br>
