@@ -302,7 +302,6 @@ export default {
     },
 
     selectDexes(selectedDexes) {
-      console.log(selectedDexes)
       this.selectedDexes = selectedDexes;
     },
   },

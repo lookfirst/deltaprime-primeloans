@@ -19,13 +19,15 @@
                      :symbol="asset.primary"
                      :symbol-secondary="asset.secondary"
                      v-on:newValue="stakeValueChange"
-                     :validators="validators">
+                     :validators="validators"
+                     :max="Number(available)">
       </CurrencyInput>
       <CurrencyInput ref="currencyInput"
                      v-else
                      :symbol="asset.symbol"
                      v-on:newValue="stakeValueChange"
-                     :validators="validators">
+                     :validators="validators"
+                     :max="Number(available)">
       </CurrencyInput>
 
       <div class="transaction-summary-wrapper">
@@ -57,9 +59,7 @@
                 Staked:
               </div>
               <div class="summary__value">
-                {{
-                  (Number(available) - Number(stakeValue)) > 0 ? Number(staked) + Number(stakeValue) : staked | smartRound
-                }}
+                {{ Number(staked) + Number(stakeValue) | smartRound }}
                 <span class="currency">{{ asset.symbol }}</span>
               </div>
             </div>
@@ -127,18 +127,13 @@ export default {
   },
   computed: {
     calculateDailyInterest() {
-      let calculatedStakedValue = 0;
-      if (Number(this.available) - Number(this.stakeValue) > 0) {
-        calculatedStakedValue = this.staked + this.stakeValue
-      } else {
-        calculatedStakedValue = this.staked;
-      }
-      return this.apy / 365 * calculatedStakedValue;
+      return this.apy / 365 * (Number(this.staked) + Number(this.stakeValue));
     }
   },
 
   methods: {
     submit() {
+      this.transactionOngoing = true;
       this.$emit('STAKE', this.stakeValue);
     },
 

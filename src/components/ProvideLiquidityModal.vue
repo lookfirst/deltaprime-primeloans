@@ -9,13 +9,15 @@
                      :symbol="firstAsset.symbol"
                      v-on:inputChange="firstInputChange"
                      :defaultValue="firstAmount"
-                     :validators="firstInputValidators">
+                     :validators="firstInputValidators"
+                     :max="Number(firstAssetBalance)">
       </CurrencyInput>
       <CurrencyInput ref="secondInput"
                      :symbol="secondAsset.symbol"
                      v-on:inputChange="secondInputChange"
                      :defaultValue="secondAmount"
-                     :validators="secondInputValidators">
+                     :validators="secondInputValidators"
+                     :max="Number(secondAssetBalance)">
       </CurrencyInput>
 
       <div class="transaction-summary-wrapper">
@@ -29,7 +31,7 @@
                 LP balance:
               </div>
               <div class="summary__value">
-                {{ formatTokenBalance(Number(lpTokenBalance) + Number(addedLiquidity), 10) }}
+                {{ formatTokenBalance(Number(lpTokenBalance) + Number(addedLiquidity), 10, true) }}
               </div>
             </div>
             <div class="summary__divider divider--long"></div>
@@ -136,8 +138,8 @@ export default {
       this.firstAmount = change;
       this.secondAmount = this.firstAmount * this.lpToken.firstPrice / this.lpToken.secondPrice;
       this.$refs.secondInput.setValue(this.secondAmount !== 0 ? this.secondAmount.toFixed(15): 0);
-      this.firstInputError = this.$refs.firstInput.error;
-      this.secondInputError = this.$refs.secondInput.error;
+      this.firstInputError = await this.$refs.firstInput.forceValidationCheck();
+      this.secondInputError = await this.$refs.secondInput.forceValidationCheck();
       await this.calculateLpBalance();
     },
 
@@ -145,8 +147,8 @@ export default {
       this.secondAmount = change;
       this.firstAmount = this.secondAmount * this.lpToken.secondPrice / this.lpToken.firstPrice;
       this.$refs.firstInput.setValue(this.firstAmount !== 0 ? this.firstAmount.toFixed(15) : 0);
-      this.firstInputError = this.$refs.firstInput.error;
-      this.secondInputError = this.$refs.secondInput.error;
+      this.firstInputError = await this.$refs.firstInput.forceValidationCheck();
+      this.secondInputError = await this.$refs.secondInput.forceValidationCheck();
       await this.calculateLpBalance();
     },
 

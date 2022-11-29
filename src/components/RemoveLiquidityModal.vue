@@ -8,7 +8,8 @@
       <CurrencyInput :symbol="lpToken.primary"
                      :symbol-secondary="lpToken.secondary"
                      v-on:newValue="inputChange"
-                     :validators="validators">
+                     :validators="validators"
+                     :max="lpTokenBalance">
       </CurrencyInput>
 
       <div class="transaction-summary-wrapper">

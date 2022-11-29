@@ -7,7 +7,7 @@
 
       <CurrencyInput :symbol="asset.symbol"
                      v-on:newValue="repayValueChange"
-                     :max="Number(asset.balance)"
+                     :max="assetDebt"
                      :validators="validators">
       </CurrencyInput>
 
@@ -29,7 +29,7 @@
               Loan:
             </div>
             <div class="summary__value">
-              {{ (debt - repayValue) > 0 ? debt - repayValue : 0 | smartRound }} {{ asset.symbol }}
+              {{ (assetDebt - repayValue) > 0 ? assetDebt - repayValue : 0 | smartRound }} {{ asset.symbol }}
             </div>
           </div>
         </TransactionResultSummaryBeta>
@@ -69,13 +69,14 @@ export default {
     health: {},
     debt: 0,
     initialLoan: {},
-    thresholdWeightedValue: {}
+    thresholdWeightedValue: {},
+    assetDebt: {},
   },
 
   data() {
     return {
       repayValue: 0,
-      healthAfterTransaction: null,
+      healthAfterTransaction: 0,
       transactionOngoing: false,
       validators: [],
       currencyInputError: false,
@@ -104,12 +105,8 @@ export default {
     },
 
     calculateHealthAfterTransaction() {
-      if (this.repayValue) {
-        this.healthAfterTransaction = calculateHealth(this.debt - Number(this.repayValue),
-            this.thresholdWeightedValue - Number(this.repayValue) * this.asset.price * this.asset.maxLeverage);
-      } else {
-        this.healthAfterTransaction = this.health;
-      }
+      this.healthAfterTransaction = calculateHealth(this.debt - Number(this.repayValue) * this.asset.price,
+        this.thresholdWeightedValue - Number(this.repayValue) * this.asset.price * this.asset.maxLeverage);
     },
 
     setupValidators() {

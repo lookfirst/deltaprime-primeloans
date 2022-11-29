@@ -79,7 +79,7 @@ export default {
   props: {
     apy: null,
     available: null,
-    deposit: null,
+    deposit: 0,
     assetSymbol: null,
   },
 
@@ -98,7 +98,7 @@ export default {
 
   computed: {
     calculateDailyInterest() {
-      return this.apy / 365 * (this.deposit + this.depositValue);
+      return this.apy / 365 * (Number(this.deposit) + this.depositValue);
     },
 
     getModalHeight() {

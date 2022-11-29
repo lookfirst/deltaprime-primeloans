@@ -503,7 +503,7 @@ export default {
       await awaitConfirmation(transaction, provider, 'borrow');
       setTimeout(async () => {
         await dispatch('updateFunds');
-        await dispatch('poolStore/setupPools');
+        await dispatch('poolStore/setupPools', {}, {root: true});
       }, 1000);
 
       setTimeout(async () => {

@@ -34,7 +34,7 @@ export default {
       const balanceOrderOfMagnitudeExponent = String(value).split('.')[0].length - 1;
       const precisionMultiplierExponent = precision - balanceOrderOfMagnitudeExponent;
       const precisionMultiplier = Math.pow(10, precisionMultiplierExponent >= 0 ? precisionMultiplierExponent : 0);
-      if (value) {
+      if (value !== null) {
         if (!toFixed) {
           return String(Math.round(value * precisionMultiplier) / precisionMultiplier);
         } else {

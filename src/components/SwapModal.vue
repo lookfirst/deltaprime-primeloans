@@ -8,7 +8,8 @@
       <CurrencyComboInput ref="sourceInput"
                           :asset-options="sourceAssetOptions"
                           v-on:valueChange="sourceInputChange"
-                          :validators="sourceValidators">
+                          :validators="sourceValidators"
+                          :max="Number(assetBalances[sourceAsset])">
       </CurrencyComboInput>
       <div class="asset-info">
         Available:
@@ -36,17 +37,18 @@
           <div class="summary__values">
             <div class="summary__value__pair">
               <div class="summary__label"
-                   v-bind:class="{'summary__label--error': healthAfterTransaction > MIN_ALLOWED_HEALTH}">
+                   v-bind:class="{'summary__label--error': healthAfterTransaction < MIN_ALLOWED_HEALTH}">
                 Health Ratio:
               </div>
               <div class="summary__value">
-                <span class="summary__value--error" v-if="healthAfterTransaction > MIN_ALLOWED_HEALTH">
-                  > {{ MIN_ALLOWED_HEALTH | percent }}
-                </span>
-                <span v-if="healthAfterTransaction <= MIN_ALLOWED_HEALTH">
+                <span class="summary__value--error" v-if="healthAfterTransaction < MIN_ALLOWED_HEALTH">
                   {{ healthAfterTransaction | percent }}
                 </span>
-                <BarGaugeBeta :min="0" :max="1" :value="healthAfterTransaction" :slim="true" :display-inline="true"></BarGaugeBeta>
+                <span v-if="healthAfterTransaction >= MIN_ALLOWED_HEALTH">
+                  {{ healthAfterTransaction | percent }}
+                </span>
+                <BarGaugeBeta :min="0" :max="1" :value="healthAfterTransaction" :slim="true"
+                              :display-inline="true"></BarGaugeBeta>
               </div>
             </div>
             <div class="summary__divider divider--long"></div>
@@ -127,6 +129,8 @@ export default {
       healthAfterTransaction: 0,
       assetBalances: [],
       transactionOngoing: false,
+      debt: 0,
+      thresholdWeightedValue: 0,
     };
   },
 
@@ -259,17 +263,14 @@ export default {
     },
 
     calculateHealthAfterTransaction() {
-      const sourceAssetValue = this.sourceAssetAmount * config.ASSETS_CONFIG[this.sourceAsset].price;
-      const targetAssetValue = this.targetAssetAmount * config.ASSETS_CONFIG[this.targetAsset].price;
-      const totalValueDiff = targetAssetValue - sourceAssetValue;
-      // if (this.withdrawValue) {
-      //   this.healthAfterTransaction = calculateHealth(this.loan - this.repayValue,
-      //     this.thresholdWeightedValue - this.repayValue * this.asset.price * this.asset.maxLeverage);
-      // } else {
-      //   this.healthAfterTransaction = this.health;
-      // }
-    },
+      const sourceAsset = config.ASSETS_CONFIG[this.sourceAsset];
+      const targetAsset = config.ASSETS_CONFIG[this.targetAsset];
+      const weightedSourceAssetValue = this.sourceAssetAmount * sourceAsset.price * sourceAsset.maxLeverage;
+      const weightedTargetAssetValue = this.targetAssetAmount * targetAsset.price * targetAsset.maxLeverage;
 
+      this.healthAfterTransaction = calculateHealth(this.debt,
+        this.thresholdWeightedValue - weightedSourceAssetValue + weightedTargetAssetValue);
+    },
   }
 };
 </script>

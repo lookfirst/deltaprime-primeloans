@@ -13,8 +13,20 @@
         <div class="top-info__value">{{ staked | smartRound }}<span class="top-info__currency"> {{ asset.name }}</span></div>
       </div>
 
-      <CurrencyInput v-if="isLP" :symbol="asset.primary" :symbol-secondary="asset.secondary" v-on:newValue="unstakeValueChange"  :validators="validators"></CurrencyInput>
-      <CurrencyInput ref="currencyInput" v-else :symbol="asset.symbol" v-on:newValue="unstakeValueChange"  :validators="validators"></CurrencyInput>
+      <CurrencyInput v-if="isLP"
+                     :symbol="asset.primary"
+                     :symbol-secondary="asset.secondary"
+                     v-on:newValue="unstakeValueChange"
+                     :validators="validators"
+                     :max="staked">
+      </CurrencyInput>
+      <CurrencyInput ref="currencyInput"
+                     v-else
+                     :symbol="asset.symbol"
+                     v-on:newValue="unstakeValueChange"
+                     :validators="validators"
+                     :max="staked">
+      </CurrencyInput>
 
 
       <div class="transaction-summary-wrapper">

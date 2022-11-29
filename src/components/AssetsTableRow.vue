@@ -272,6 +272,8 @@ export default {
       modalInstance.sourceAssetBalance = this.assetBalances[this.asset.symbol];
       modalInstance.assetBalances = this.assetBalances;
       modalInstance.targetAsset = Object.keys(config.ASSETS_CONFIG).filter(asset => asset !== this.asset.symbol)[0];
+      modalInstance.debt = this.fullLoanStatus.debt;
+      modalInstance.thresholdWeightedValue = this.fullLoanStatus.thresholdWeightedValue ? this.fullLoanStatus.thresholdWeightedValue : 0;
       modalInstance.$on('SWAP', swapData => {
         const swapRequest = {
           ...swapData,
@@ -325,7 +327,9 @@ export default {
       modalInstance.asset = this.asset;
       modalInstance.assetBalance = this.assetBalances[this.asset.symbol];
       modalInstance.health = this.fullLoanStatus.health;
-      modalInstance.totalCollateral = this.totalValue - this.debt;
+      modalInstance.debt = this.fullLoanStatus.debt;
+      modalInstance.thresholdWeightedValue = this.fullLoanStatus.thresholdWeightedValue ? this.fullLoanStatus.thresholdWeightedValue : 0;
+
       modalInstance.$on('WITHDRAW', withdrawEvent => {
         const value = withdrawEvent.value.toFixed(config.DECIMALS_PRECISION);
         if (withdrawEvent.withdrawAsset === 'AVAX') {
@@ -354,7 +358,9 @@ export default {
       const modalInstance = this.openModal(RepayModal);
       modalInstance.asset = this.asset;
       modalInstance.health = this.fullLoanStatus.health;
-      modalInstance.debt = Number(this.debtsPerAsset[this.asset.symbol].debt);
+      modalInstance.debt = this.fullLoanStatus.debt;
+      modalInstance.thresholdWeightedValue = this.fullLoanStatus.thresholdWeightedValue ? this.fullLoanStatus.thresholdWeightedValue : 0;
+      modalInstance.assetDebt = Number(this.debtsPerAsset[this.asset.symbol].debt);
       modalInstance.$on('REPAY', value => {
         const repayRequest = {
           asset: this.asset.symbol,

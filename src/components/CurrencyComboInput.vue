@@ -5,7 +5,8 @@
                      class="currency-input"
                      :embedded="true"
                      :validators="validators"
-                     v-on:inputChange="currencyInputChange">
+                     v-on:inputChange="currencyInputChange"
+                     :max="max">
       </CurrencyInput>
       <div class="divider"></div>
       <div class="select" v-bind:class="{'expanded': expanded, 'has-background': hasBackground }">
@@ -46,7 +47,8 @@ export default {
   },
   props: {
     assetOptions: {},
-    validators: {}
+    validators: {},
+    max: {},
   },
   computed: {
     getDisplayedAssetOptions() {
