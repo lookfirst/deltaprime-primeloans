@@ -147,7 +147,7 @@ export default {
       this.actionsConfig = [
         {
           iconSrc: 'src/assets/icons/plus.svg',
-          tooltip: 'Add / Borrow',
+          tooltip: BORROWABLE_ASSETS.includes(this.asset.symbol) ? 'Add / Borrow' : 'Add',
           menuOptions: [
             {
               key: 'ADD_FROM_WALLET',
@@ -165,17 +165,19 @@ export default {
         },
         {
           iconSrc: 'src/assets/icons/minus.svg',
-          tooltip: 'Withdraw / Repay',
+          tooltip: BORROWABLE_ASSETS.includes(this.asset.symbol) ? 'Withdraw / Repay' : 'Withdraw',
           disabled: !this.hasSmartLoanContract,
           menuOptions: [
             {
               key: 'WITHDRAW',
               name: 'Withdraw',
             },
-            {
+            BORROWABLE_ASSETS.includes(this.asset.symbol) ?
+              {
               key: 'REPAY',
               name: 'Repay',
             }
+            : null
           ]
         },
         {

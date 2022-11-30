@@ -542,18 +542,21 @@ export default {
       ]);
 
       let amount = parseUnits(String(swapRequest.sourceAmount), config.ASSETS_CONFIG[swapRequest.sourceAsset].decimals);
-      //TODO: optimize and use YakSwap
+      //  TODO: optimize and use YakSwap
       let estimatedReceivedTokens = toWei("0");
       let chosenDex;
 
       for (let dex in config.DEX_CONFIG) {
-        const intermediary = new Contract(config.DEX_CONFIG[dex].intermediaryAddress, INTERMEDIARY.abi, provider.getSigner());
+        const intermediaryContract = new Contract(config.DEX_CONFIG[dex].intermediaryAddress, INTERMEDIARY.abi, provider.getSigner());
 
-        const whitelistedTokens = await intermediary.getAllWhitelistedTokens();
-        const areWhitelisted = whitelistedTokens.includes(tokenAddresses[swapRequest.sourceAsset]) && whitelistedTokens.includes(tokenAddresses[swapRequest.targetAsset]);
+        const whitelistedTokens = await intermediaryContract.getAllWhitelistedTokens();
+        const whiteListedTokensUppercase = whitelistedTokens.map(address => address.toUpperCase());
+        const isSourceAssetWhiteListed = whiteListedTokensUppercase.includes(tokenAddresses[swapRequest.sourceAsset].toUpperCase());
+        const isTargetAssetWhiteListed = whiteListedTokensUppercase.includes(tokenAddresses[swapRequest.targetAsset].toUpperCase());console.log(isTargetAssetWhiteListed);
+        const areWhitelisted = isSourceAssetWhiteListed && isTargetAssetWhiteListed;
 
         if (areWhitelisted) {
-          let receivedAmount = await intermediary.getMaximumTokensReceived(amount, tokenAddresses[swapRequest.sourceAsset], tokenAddresses[swapRequest.targetAsset]);
+          let receivedAmount = await intermediaryContract.getMaximumTokensReceived(amount, tokenAddresses[swapRequest.sourceAsset], tokenAddresses[swapRequest.targetAsset]);
 
           if (receivedAmount.gt(estimatedReceivedTokens)) {
             estimatedReceivedTokens = receivedAmount;
