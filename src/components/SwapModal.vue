@@ -41,7 +41,8 @@
                 Health Ratio:
               </div>
               <div class="summary__value">
-                <span class="summary__value--error" v-if="healthAfterTransaction < MIN_ALLOWED_HEALTH || sourceInputError === 'Amount exceeds balance'">
+                <span class="summary__value--error"
+                      v-if="healthAfterTransaction < MIN_ALLOWED_HEALTH">
                   {{ healthAfterTransaction | percent }}
                 </span>
                 <span v-else>

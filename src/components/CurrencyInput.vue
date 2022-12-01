@@ -106,7 +106,9 @@ export default {
       // this.internalValue = this.value;
       this.ongoingErrorCheck = true;
       this.$emit('ongoingErrorCheck', this.ongoingErrorCheck);
-      await this.checkErrors(value);
+      setTimeout(async () => {
+        await this.checkErrors(value);
+      });
       this.ongoingErrorCheck = false;
       this.$emit('ongoingErrorCheck', this.ongoingErrorCheck);
 
