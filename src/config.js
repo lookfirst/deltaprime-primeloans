@@ -7,7 +7,7 @@ import TRADERJOE_INTERMEDIARY_TUP from '@contracts/TraderJoeIntermediaryTUP.json
 
 export default {
     MAX_COLLATERAL: 500,
-    MIN_ALLOWED_HEALTH: 0.2,
+    MIN_ALLOWED_HEALTH: 0.0182,
     COMPETITION_START_BLOCK: 14858534,
     DECIMALS_PRECISION: 8,
     chainId: 43114,

@@ -118,9 +118,6 @@ export default {
       }
     },
 
-    test() {
-    },
-
     setSelectedAsset(asset, disableEmitValue) {
       this.selectedAsset = this.displayedOptions.find(option => option.symbol === asset);
       if (!disableEmitValue) {
@@ -135,8 +132,9 @@ export default {
       }
     },
 
-    emitValue() {
-      this.$emit('valueChange', {asset: this.selectedAsset.symbol, value: this.assetAmount});
+    async emitValue() {
+      const error = await this.$refs.currencyInput.forceValidationCheck();
+      this.$emit('valueChange', {asset: this.selectedAsset.symbol, value: this.assetAmount, error: error});
     },
 
     setCurrencyInputValue(value) {

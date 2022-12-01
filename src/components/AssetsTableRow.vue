@@ -143,6 +143,7 @@ export default {
   },
   methods: {
     ...mapActions('fundsStore', ['swap', 'fund', 'borrow', 'withdraw', 'withdrawNativeToken', 'repay', 'createAndFundLoan', 'fundNativeToken']),
+    ...mapActions('network', ['updateBalance']),
     setupActionsConfiguration() {
       this.actionsConfig = [
         {
@@ -276,6 +277,7 @@ export default {
       modalInstance.targetAsset = Object.keys(config.ASSETS_CONFIG).filter(asset => asset !== this.asset.symbol)[0];
       modalInstance.debt = this.fullLoanStatus.debt;
       modalInstance.thresholdWeightedValue = this.fullLoanStatus.thresholdWeightedValue ? this.fullLoanStatus.thresholdWeightedValue : 0;
+      modalInstance.health = this.fullLoanStatus.health;
       modalInstance.$on('SWAP', swapData => {
         const swapRequest = {
           ...swapData,
@@ -288,13 +290,13 @@ export default {
     },
 
     async openAddFromWalletModal() {
+      const walletAssetBalance = await this.getWalletAssetBalance();
       const modalInstance = this.openModal(AddFromWalletModal);
-
       modalInstance.asset = this.asset;
       modalInstance.assetBalance = this.assetBalances && this.assetBalances[this.asset.symbol] ? this.assetBalances[this.asset.symbol] : 0;
       modalInstance.loan = this.fullLoanStatus.debt ? this.fullLoanStatus.debt : 0;
       modalInstance.thresholdWeightedValue = this.fullLoanStatus.thresholdWeightedValue ? this.fullLoanStatus.thresholdWeightedValue : 0;
-      modalInstance.walletAssetBalance = await this.getWalletAssetBalance();
+      modalInstance.walletAssetBalance = walletAssetBalance;
       modalInstance.walletNativeTokenBalance = this.accountBalance;
       modalInstance.noSmartLoan = this.noSmartLoan;
       modalInstance.$on('ADD_FROM_WALLET', addFromWalletEvent => {

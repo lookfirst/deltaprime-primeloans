@@ -99,11 +99,13 @@ import Toggle from './Toggle';
 import BarGaugeBeta from './BarGaugeBeta';
 import {mapState} from 'vuex';
 import {calculateHealth} from '../utils/calculate';
+import LoadedValue from './LoadedValue';
 
 
 export default {
   name: 'AddFromWalletModal',
   components: {
+    LoadedValue,
     Button,
     CurrencyInput,
     TransactionResultSummaryBeta,
@@ -119,7 +121,9 @@ export default {
     assetBalance: Number,
     isLP: false,
     walletAssetBalance: {},
-    walletNativeTokenBalance: {},
+    walletNativeTokenBalance: {
+      default: null,
+    },
     noSmartLoan: false,
     transactionOngoing: false
   },

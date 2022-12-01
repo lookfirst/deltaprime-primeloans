@@ -41,10 +41,10 @@
                 Health Ratio:
               </div>
               <div class="summary__value">
-                <span class="summary__value--error" v-if="healthAfterTransaction < MIN_ALLOWED_HEALTH">
+                <span class="summary__value--error" v-if="healthAfterTransaction < MIN_ALLOWED_HEALTH || sourceInputError === 'Amount exceeds balance'">
                   {{ healthAfterTransaction | percent }}
                 </span>
-                <span v-if="healthAfterTransaction >= MIN_ALLOWED_HEALTH">
+                <span v-else>
                   {{ healthAfterTransaction | percent }}
                 </span>
                 <BarGaugeBeta :min="0" :max="1" :value="healthAfterTransaction" :slim="true"
@@ -119,8 +119,8 @@ export default {
       sourceAssetBalance: 0,
       targetAssetBalance: null,
       conversionRate: null,
-      sourceAssetAmount: null,
-      targetAssetAmount: null,
+      sourceAssetAmount: 0,
+      targetAssetAmount: 0,
       sourceValidators: [],
       targetValidators: [],
       sourceInputError: false,
@@ -142,6 +142,7 @@ export default {
       this.setupTargetAsset();
       this.setupConversionRate();
       this.setupValidators();
+      this.calculateHealthAfterTransaction();
     });
   },
 
@@ -185,15 +186,15 @@ export default {
       }
     },
 
-    sourceInputChange(change) {
-      if (change.asset === this.targetAsset) {
+    sourceInputChange(changeEvent) {
+      if (changeEvent.asset === this.targetAsset) {
         this.reverseSwap();
       } else {
-        this.sourceAsset = change.asset;
-        const targetAssetAmount = change.value / this.conversionRate;
+        this.sourceAsset = changeEvent.asset;
+        const targetAssetAmount = changeEvent.value / this.conversionRate;
         if (!Number.isNaN(targetAssetAmount)) {
           const value = Math.ceil(targetAssetAmount * 1000000) / 1000000;
-          this.sourceAssetAmount = change.value;
+          this.sourceAssetAmount = changeEvent.value;
           this.targetAssetAmount = value;
           this.$refs.targetInput.setCurrencyInputValue(value);
 
@@ -202,7 +203,7 @@ export default {
           this.calculateHealthAfterTransaction();
         }
       }
-      this.sourceInputError = change.error;
+      this.sourceInputError = changeEvent.error;
     },
 
     targetInputChange(change) {
@@ -259,17 +260,25 @@ export default {
             }
           }
         },
+        {
+          validate: (value) => {
+            this.calculateHealthAfterTransaction(value);
+            if (this.healthAfterTransaction < this.MIN_ALLOWED_HEALTH) {
+              return 'The health is below allowed limit';
+            }
+          }
+        },
       ];
     },
 
-    calculateHealthAfterTransaction() {
+    calculateHealthAfterTransaction(sourceAssetAmount = this.sourceAssetAmount, targetAssetAmount = this.targetAssetAmount) {
       const sourceAsset = config.ASSETS_CONFIG[this.sourceAsset];
       const targetAsset = config.ASSETS_CONFIG[this.targetAsset];
-      const weightedSourceAssetValue = this.sourceAssetAmount * sourceAsset.price * sourceAsset.maxLeverage;
-      const weightedTargetAssetValue = this.targetAssetAmount * targetAsset.price * targetAsset.maxLeverage;
+      const weightedSourceAssetValue = sourceAssetAmount * sourceAsset.price * sourceAsset.maxLeverage;
+      const weightedTargetAssetValue = targetAssetAmount * targetAsset.price * targetAsset.maxLeverage;
 
-      this.healthAfterTransaction = calculateHealth(this.debt,
-        this.thresholdWeightedValue - weightedSourceAssetValue + weightedTargetAssetValue);
+      this.healthAfterTransaction = calculateHealth(this.debt, this.thresholdWeightedValue - weightedSourceAssetValue + weightedTargetAssetValue);
+      return this.healthAfterTransaction;
     },
   }
 };
