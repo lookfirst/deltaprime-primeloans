@@ -290,13 +290,13 @@ export default {
     },
 
     async openAddFromWalletModal() {
-      const walletAssetBalance = await this.getWalletAssetBalance();
       const modalInstance = this.openModal(AddFromWalletModal);
+
       modalInstance.asset = this.asset;
       modalInstance.assetBalance = this.assetBalances && this.assetBalances[this.asset.symbol] ? this.assetBalances[this.asset.symbol] : 0;
       modalInstance.loan = this.fullLoanStatus.debt ? this.fullLoanStatus.debt : 0;
       modalInstance.thresholdWeightedValue = this.fullLoanStatus.thresholdWeightedValue ? this.fullLoanStatus.thresholdWeightedValue : 0;
-      modalInstance.walletAssetBalance = walletAssetBalance;
+      modalInstance.walletAssetBalance = await this.getWalletAssetBalance();
       modalInstance.walletNativeTokenBalance = this.accountBalance;
       modalInstance.noSmartLoan = this.noSmartLoan;
       modalInstance.$on('ADD_FROM_WALLET', addFromWalletEvent => {
