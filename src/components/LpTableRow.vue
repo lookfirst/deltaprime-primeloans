@@ -6,7 +6,7 @@
         <div class="asset__info">
           <div class="asset__name">{{ lpToken.primary }} - {{ lpToken.secondary }}</div>
           <div class="asset__dex">
-            on {{ lpToken.dex }}
+            by {{ lpToken.dex }}
           </div>
         </div>
       </div>
@@ -264,7 +264,7 @@ export default {
       modalInstance.secondAssetBalance = this.assetBalances[this.lpToken.secondary];
       modalInstance.$on('PROVIDE_LIQUIDITY', provideLiquidityEvent => {
         if (this.smartLoanContract) {
-          const lpRequest = {
+          const provideLiquidityRequest = {
             symbol: this.lpToken.symbol,
             firstAsset: this.lpToken.primary,
             secondAsset: this.lpToken.secondary,
@@ -272,7 +272,7 @@ export default {
             secondAmount: provideLiquidityEvent.secondAmount.toFixed(config.DECIMALS_PRECISION),
             dex: this.lpToken.dex
         };
-          this.handleTransaction(this.provideLiquidity, {lpRequest: lpRequest}).then(() => {
+          this.handleTransaction(this.provideLiquidity, {provideLiquidityRequest: provideLiquidityRequest}).then(() => {
             this.closeModal();
           });
         }

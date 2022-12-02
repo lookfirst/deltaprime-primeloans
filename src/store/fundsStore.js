@@ -355,6 +355,7 @@ export default {
     },
 
     async fundNativeToken({state, rootState, commit, dispatch}, {value}) {
+      console.log('fund native token');
       const provider = rootState.network.provider;
 
       const loanAssets = mergeArrays([(
@@ -371,8 +372,8 @@ export default {
       console.log('firing transaction');
       await awaitConfirmation(transaction, provider, 'fund');
       console.log('transaction success');
-      await dispatch('getAllAssetsBalances');
       setTimeout(async () => {
+        await dispatch('getAllAssetsBalances');
         await dispatch('updateFunds');
         await dispatch('network/updateBalance', {}, {root: true});
       }, 1000);
@@ -418,29 +419,43 @@ export default {
       }, 1000);
     },
 
-    async provideLiquidity({state, rootState, commit, dispatch}, {lpRequest}) {
+    async provideLiquidity({state, rootState, commit, dispatch}, {provideLiquidityRequest}) {
+      console.log(provideLiquidityRequest);
       const provider = rootState.network.provider;
 
-      const firstDecimals = config.ASSETS_CONFIG[lpRequest.firstAsset].decimals;
-      const secondDecimals = config.ASSETS_CONFIG[lpRequest.secondAsset].decimals;
+      const firstDecimals = config.ASSETS_CONFIG[provideLiquidityRequest.firstAsset].decimals;
+      const secondDecimals = config.ASSETS_CONFIG[provideLiquidityRequest.secondAsset].decimals;
 
-      let minAmount = .9;
+      let minAmount = 0.5;
 
       const loanAssets = mergeArrays([(
         await state.smartLoanContract.getAllOwnedAssets()).map(el => fromBytes32(el)),
         Object.keys(config.POOLS_CONFIG),
-        [lpRequest.symbol]
+        [provideLiquidityRequest.symbol]
       ]);
 
-      const transaction = await (await wrapContract(state.smartLoanContract, loanAssets))[config.DEX_CONFIG[lpRequest.dex].addLiquidityMethod](
-        toBytes32(lpRequest.firstAsset),
-        toBytes32(lpRequest.secondAsset),
-        parseUnits(lpRequest.firstAmount.toFixed(firstDecimals), BigNumber.from(firstDecimals.toString())),
-        parseUnits(lpRequest.secondAmount.toFixed(secondDecimals), BigNumber.from(secondDecimals.toString())),
-        parseUnits((minAmount * lpRequest.firstAmount).toFixed(firstDecimals), BigNumber.from(firstDecimals.toString())),
-        parseUnits((minAmount * lpRequest.secondAmount).toFixed(secondDecimals), BigNumber.from(secondDecimals.toString())),
+      console.log(loanAssets);
+
+      console.log(parseUnits(provideLiquidityRequest.firstAmount, BigNumber.from(firstDecimals.toString())));
+      console.log(parseUnits(provideLiquidityRequest.secondAmount, BigNumber.from(secondDecimals.toString())));
+      console.log(parseUnits((minAmount * Number(provideLiquidityRequest.firstAmount)).toFixed(firstDecimals), BigNumber.from(firstDecimals.toString())));
+      console.log(parseUnits((minAmount * Number(provideLiquidityRequest.secondAmount)).toFixed(secondDecimals), BigNumber.from(secondDecimals.toString())));
+
+      const wrappedContract = await wrapContract(state.smartLoanContract, loanAssets);
+
+      console.log(wrappedContract);
+
+      const transaction = await wrappedContract[config.DEX_CONFIG[provideLiquidityRequest.dex].addLiquidityMethod](
+        toBytes32(provideLiquidityRequest.firstAsset),
+        toBytes32(provideLiquidityRequest.secondAsset),
+        parseUnits(provideLiquidityRequest.firstAmount, BigNumber.from(firstDecimals.toString())),
+        parseUnits(provideLiquidityRequest.secondAmount, BigNumber.from(secondDecimals.toString())),
+        parseUnits((minAmount * Number(provideLiquidityRequest.firstAmount)).toFixed(firstDecimals), BigNumber.from(firstDecimals.toString())),
+        parseUnits((minAmount * Number(provideLiquidityRequest.secondAmount)).toFixed(secondDecimals), BigNumber.from(secondDecimals.toString())),
         {gasLimit: 8000000}
       );
+
+      console.log(transaction);
 
       await awaitConfirmation(transaction, provider, 'provide liquidity');
 

@@ -52,7 +52,7 @@ export default {
   name: 'CurrencyInput',
   props: {
     price: {type: Number},
-    max: {type: Number, default: null},
+    max: {default: null},
     symbol: {type: String, default: 'AVAX'},
     symbolSecondary: {type: String, default: null},
     flexDirection: {type: String, default: 'column'},
@@ -70,6 +70,7 @@ export default {
     denominationButtons: false,
     slippage: {type: Number, default: 0},
     embedded: false,
+    delayErrorCheckAfterValuePropagation: {type: Boolean, default: false}
   },
   computed: {},
   data() {
@@ -103,12 +104,17 @@ export default {
   },
   methods: {
     async updateValue(value) {
-      // this.internalValue = this.value;
       this.ongoingErrorCheck = true;
       this.$emit('ongoingErrorCheck', this.ongoingErrorCheck);
-      setTimeout(async () => {
+
+      if (this.delayErrorCheckAfterValuePropagation) {
+        setTimeout(async () => {
+          await this.checkErrors(value);
+        });
+      } else {
         await this.checkErrors(value);
-      });
+      }
+
       this.ongoingErrorCheck = false;
       this.$emit('ongoingErrorCheck', this.ongoingErrorCheck);
 

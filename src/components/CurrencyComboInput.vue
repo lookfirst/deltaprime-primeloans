@@ -6,7 +6,8 @@
                      :embedded="true"
                      :validators="validators"
                      v-on:inputChange="currencyInputChange"
-                     :max="max">
+                     :max="max"
+                     :delay-error-check-after-value-propagation="true">
       </CurrencyInput>
       <div class="divider"></div>
       <div class="select" v-bind:class="{'expanded': expanded, 'has-background': hasBackground }">

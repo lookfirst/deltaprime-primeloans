@@ -9,7 +9,7 @@
                      :symbol-secondary="lpToken.secondary"
                      v-on:newValue="inputChange"
                      :validators="validators"
-                     :max="lpTokenBalance">
+                     :max="lpTokenBalance.toFixed(10)">
       </CurrencyInput>
 
       <div class="transaction-summary-wrapper">
@@ -23,7 +23,7 @@
                 LP token balance:
               </div>
               <div class="summary__value">
-                {{ (lpTokenBalance - amount) > 0 ? lpTokenBalance - amount : 0}}
+                {{ formatTokenBalance(((lpTokenBalance - amount) > 0 ? lpTokenBalance - amount : 0), 10, true)}}
               </div>
             </div>
             <div class="summary__divider divider--long"></div>
