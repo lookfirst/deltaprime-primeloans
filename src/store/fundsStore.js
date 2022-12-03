@@ -8,7 +8,7 @@ import config from '@/config';
 import redstone from 'redstone-api';
 import {BigNumber, Contract} from 'ethers';
 import TOKEN_ADDRESSES from '../../common/addresses/avax/token_addresses.json';
-import {mergeArrays} from '../utils/calculate';
+import {mergeArrays, removePaddedTrailingZeros} from '../utils/calculate';
 import INTERMEDIARY from '@artifacts/contracts/integrations/UniswapV2Intermediary.sol/UniswapV2Intermediary.json';
 
 const toBytes32 = require('ethers').utils.formatBytes32String;
@@ -426,7 +426,7 @@ export default {
       const firstDecimals = config.ASSETS_CONFIG[provideLiquidityRequest.firstAsset].decimals;
       const secondDecimals = config.ASSETS_CONFIG[provideLiquidityRequest.secondAsset].decimals;
 
-      let minAmount = 0.5;
+      let minAmount = 0.9;
 
       const loanAssets = mergeArrays([(
         await state.smartLoanContract.getAllOwnedAssets()).map(el => fromBytes32(el)),
@@ -434,16 +434,7 @@ export default {
         [provideLiquidityRequest.symbol]
       ]);
 
-      console.log(loanAssets);
-
-      console.log(parseUnits(provideLiquidityRequest.firstAmount, BigNumber.from(firstDecimals.toString())));
-      console.log(parseUnits(provideLiquidityRequest.secondAmount, BigNumber.from(secondDecimals.toString())));
-      console.log(parseUnits((minAmount * Number(provideLiquidityRequest.firstAmount)).toFixed(firstDecimals), BigNumber.from(firstDecimals.toString())));
-      console.log(parseUnits((minAmount * Number(provideLiquidityRequest.secondAmount)).toFixed(secondDecimals), BigNumber.from(secondDecimals.toString())));
-
       const wrappedContract = await wrapContract(state.smartLoanContract, loanAssets);
-
-      console.log(wrappedContract);
 
       const transaction = await wrappedContract[config.DEX_CONFIG[provideLiquidityRequest.dex].addLiquidityMethod](
         toBytes32(provideLiquidityRequest.firstAsset),
@@ -469,24 +460,42 @@ export default {
       }, 30000);
     },
 
-    async removeLiquidity({state, rootState, commit, dispatch}, {removeRequest}) {
+    async removeLiquidity({state, rootState, commit, dispatch}, {removeLiquidityRequest}) {
+
+      console.log(removeLiquidityRequest);
+
       const provider = rootState.network.provider;
 
-      const firstDecimals = config.ASSETS_CONFIG[removeRequest.firstAsset].decimals;
-      const secondDecimals = config.ASSETS_CONFIG[removeRequest.secondAsset].decimals;
+      const firstDecimals = config.ASSETS_CONFIG[removeLiquidityRequest.firstAsset].decimals;
+      const secondDecimals = config.ASSETS_CONFIG[removeLiquidityRequest.secondAsset].decimals;
 
       const loanAssets = mergeArrays([(
         await state.smartLoanContract.getAllOwnedAssets()).map(el => fromBytes32(el)),
         Object.keys(config.POOLS_CONFIG),
-        [removeRequest.firstAsset, removeRequest.secondAsset]
+        [removeLiquidityRequest.firstAsset, removeLiquidityRequest.secondAsset]
       ]);
 
-      const transaction = await (await wrapContract(state.smartLoanContract, loanAssets))[config.DEX_CONFIG[removeRequest.dex].removeLiquidityMethod](
-        toBytes32(removeRequest.firstAsset),
-        toBytes32(removeRequest.secondAsset),
-        parseUnits(removeRequest.value.toFixed(removeRequest.assetDecimals), BigNumber.from(removeRequest.assetDecimals.toString())),
-        parseUnits((removeRequest.minFirstAmount).toFixed(firstDecimals), BigNumber.from(firstDecimals.toString())),
-        parseUnits((removeRequest.minSecondAmount).toFixed(secondDecimals), BigNumber.from(secondDecimals.toString())),
+      const wrappedContract = await wrapContract(state.smartLoanContract, loanAssets);
+      console.log(wrappedContract);
+
+      console.log('firstAsset', removeLiquidityRequest.firstAsset);
+      console.log('secondAsset', removeLiquidityRequest.secondAsset);
+      console.log('value', removePaddedTrailingZeros(removeLiquidityRequest.value));
+      console.log('minFirstAmount', removeLiquidityRequest.minFirstAmount);
+      console.log('minSecondAmount', removeLiquidityRequest.minSecondAmount);
+
+      console.log(toBytes32(removeLiquidityRequest.firstAsset));
+      console.log(toBytes32(removeLiquidityRequest.secondAsset));
+      console.log(parseUnits(removePaddedTrailingZeros(removeLiquidityRequest.value), BigNumber.from(removeLiquidityRequest.assetDecimals.toString())));
+      console.log(parseUnits((removeLiquidityRequest.minFirstAmount), BigNumber.from(firstDecimals.toString())));
+      console.log(parseUnits((removeLiquidityRequest.minSecondAmount), BigNumber.from(secondDecimals.toString())));
+
+      const transaction = await wrappedContract[config.DEX_CONFIG[removeLiquidityRequest.dex].removeLiquidityMethod](
+        toBytes32(removeLiquidityRequest.firstAsset),
+        toBytes32(removeLiquidityRequest.secondAsset),
+        parseUnits(removePaddedTrailingZeros(removeLiquidityRequest.value), BigNumber.from(removeLiquidityRequest.assetDecimals.toString())),
+        parseUnits((removeLiquidityRequest.minFirstAmount), BigNumber.from(firstDecimals.toString())),
+        parseUnits((removeLiquidityRequest.minSecondAmount), BigNumber.from(secondDecimals.toString())),
         {gasLimit: 8000000}
       );
 

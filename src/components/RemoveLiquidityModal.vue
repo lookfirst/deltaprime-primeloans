@@ -125,10 +125,11 @@ export default {
 
   methods: {
     submit() {
+      const lpTokenDecimals = config.LP_ASSETS_CONFIG[this.lpToken.symbol].decimals;
       this.transactionOngoing = true;
       this.$emit('REMOVE_LIQUIDITY', {
         asset: this.lpToken.symbol,
-        amount: this.amount,
+        amount: this.amount.toFixed(lpTokenDecimals),
         minReceivedFirst: this.minReceivedFirst,
         minReceivedSecond: this.minReceivedSecond
       });
@@ -160,16 +161,19 @@ export default {
         //TODO: hardcoded slippage
         const slippage = 0.005; // 0.5% slippage
 
-        const firstToken = new ethers.Contract(this.firstAsset.address, erc20ABI, provider.getSigner());
-        const secondToken = new ethers.Contract(this.secondAsset.address, erc20ABI, provider.getSigner());
-        const lpToken = new ethers.Contract(this.lpToken.address, erc20ABI, provider.getSigner());
+        const firstTokenContract = new ethers.Contract(this.firstAsset.address, erc20ABI, provider.getSigner());
+        const secondTokenContract = new ethers.Contract(this.secondAsset.address, erc20ABI, provider.getSigner());
+        const lpTokenContract = new ethers.Contract(this.lpToken.address, erc20ABI, provider.getSigner());
 
-        const firstTokenBalance = await firstToken.balanceOf(this.lpToken.address);
-        const secondTokenBalance = await secondToken.balanceOf(this.lpToken.address);
-        const totalSupply = await lpToken.totalSupply();
+        const firstDecimals = config.ASSETS_CONFIG[this.firstAsset.symbol].decimals;
+        const secondDecimals = config.ASSETS_CONFIG[this.secondAsset.symbol].decimals;
 
-        const firstAmount = toWei(lpRemoved.toString()).mul(firstTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
-        const secondAmount = toWei(lpRemoved.toString()).mul(secondTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
+        const firstTokenBalance = await firstTokenContract.balanceOf(this.lpToken.address);
+        const secondTokenBalance = await secondTokenContract.balanceOf(this.lpToken.address);
+        const totalSupply = await lpTokenContract.totalSupply();
+
+        const firstAmount = toWei(lpRemoved.toFixed(firstDecimals)).mul(firstTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
+        const secondAmount = toWei(lpRemoved.toFixed(secondDecimals)).mul(secondTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
 
         this.minReceivedFirst = Number(formatUnits(firstAmount, this.firstAsset.decimals));
         this.minReceivedSecond = Number(formatUnits(secondAmount, this.secondAsset.decimals));

@@ -287,7 +287,7 @@ export default {
       modalInstance.firstBalance = Number(this.assetBalances[this.lpToken.primary]);
       modalInstance.secondBalance = Number(this.assetBalances[this.lpToken.secondary]);
       modalInstance.$on('REMOVE_LIQUIDITY', removeEvent => {
-        const removeRequest = {
+        const removeLiquidityRequest = {
           value: removeEvent.amount,
           symbol: this.lpToken.symbol,
           firstAsset: this.lpToken.primary,
@@ -298,7 +298,7 @@ export default {
           dex: this.lpToken.dex
         }
 
-        this.handleTransaction(this.removeLiquidity, {removeRequest: removeRequest}).then(() => {
+        this.handleTransaction(this.removeLiquidity, {removeLiquidityRequest: removeLiquidityRequest}).then(() => {
           this.closeModal();
         });
       });
