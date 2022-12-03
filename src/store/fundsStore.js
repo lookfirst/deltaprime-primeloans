@@ -462,8 +462,6 @@ export default {
 
     async removeLiquidity({state, rootState, commit, dispatch}, {removeLiquidityRequest}) {
 
-      console.log(removeLiquidityRequest);
-
       const provider = rootState.network.provider;
 
       const firstDecimals = config.ASSETS_CONFIG[removeLiquidityRequest.firstAsset].decimals;
@@ -476,19 +474,6 @@ export default {
       ]);
 
       const wrappedContract = await wrapContract(state.smartLoanContract, loanAssets);
-      console.log(wrappedContract);
-
-      console.log('firstAsset', removeLiquidityRequest.firstAsset);
-      console.log('secondAsset', removeLiquidityRequest.secondAsset);
-      console.log('value', removePaddedTrailingZeros(removeLiquidityRequest.value));
-      console.log('minFirstAmount', removeLiquidityRequest.minFirstAmount);
-      console.log('minSecondAmount', removeLiquidityRequest.minSecondAmount);
-
-      console.log(toBytes32(removeLiquidityRequest.firstAsset));
-      console.log(toBytes32(removeLiquidityRequest.secondAsset));
-      console.log(parseUnits(removePaddedTrailingZeros(removeLiquidityRequest.value), BigNumber.from(removeLiquidityRequest.assetDecimals.toString())));
-      console.log(parseUnits((removeLiquidityRequest.minFirstAmount), BigNumber.from(firstDecimals.toString())));
-      console.log(parseUnits((removeLiquidityRequest.minSecondAmount), BigNumber.from(secondDecimals.toString())));
 
       const transaction = await wrappedContract[config.DEX_CONFIG[removeLiquidityRequest.dex].removeLiquidityMethod](
         toBytes32(removeLiquidityRequest.firstAsset),

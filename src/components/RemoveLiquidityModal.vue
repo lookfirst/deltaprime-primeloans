@@ -23,7 +23,7 @@
                 LP token balance:
               </div>
               <div class="summary__value">
-                {{ formatTokenBalance(((lpTokenBalance - amount) > 0 ? lpTokenBalance - amount : 0), 10, true)}}
+                {{ formatTokenBalance(((lpTokenBalance - amount) > 0 ? lpTokenBalance - amount : 0), 10, true) }}
               </div>
             </div>
             <div class="summary__divider divider--long"></div>
@@ -68,8 +68,7 @@ import Toggle from './Toggle';
 import BarGaugeBeta from './BarGaugeBeta';
 import config from '../config';
 import {erc20ABI} from '../utils/blockchain';
-import {toWei} from '../utils/calculate';
-import {formatUnits} from 'ethers/lib/utils';
+import {parseUnits, formatUnits} from 'ethers/lib/utils';
 
 const ethers = require('ethers');
 
@@ -124,14 +123,15 @@ export default {
   },
 
   methods: {
-    submit() {
+    async submit() {
       const lpTokenDecimals = config.LP_ASSETS_CONFIG[this.lpToken.symbol].decimals;
       this.transactionOngoing = true;
+      const minReceivedAmounts = await this.calculateReceivedAmounts(this.amount);
       this.$emit('REMOVE_LIQUIDITY', {
         asset: this.lpToken.symbol,
         amount: this.amount.toFixed(lpTokenDecimals),
-        minReceivedFirst: this.minReceivedFirst,
-        minReceivedSecond: this.minReceivedSecond
+        minReceivedFirst: minReceivedAmounts.minReceivedFirst,
+        minReceivedSecond: minReceivedAmounts.minReceivedSecond
       });
     },
 
@@ -165,18 +165,34 @@ export default {
         const secondTokenContract = new ethers.Contract(this.secondAsset.address, erc20ABI, provider.getSigner());
         const lpTokenContract = new ethers.Contract(this.lpToken.address, erc20ABI, provider.getSigner());
 
-        const firstDecimals = config.ASSETS_CONFIG[this.firstAsset.symbol].decimals;
-        const secondDecimals = config.ASSETS_CONFIG[this.secondAsset.symbol].decimals;
+        const lpTokenDecimals = config.LP_ASSETS_CONFIG[this.lpToken.symbol].decimals;
 
         const firstTokenBalance = await firstTokenContract.balanceOf(this.lpToken.address);
         const secondTokenBalance = await secondTokenContract.balanceOf(this.lpToken.address);
         const totalSupply = await lpTokenContract.totalSupply();
 
-        const firstAmount = toWei(lpRemoved.toFixed(firstDecimals)).mul(firstTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
-        const secondAmount = toWei(lpRemoved.toFixed(secondDecimals)).mul(secondTokenBalance).div(totalSupply).mul((1 - slippage) * 1000).div(1000);
+        const firstAmount =
+          parseUnits(lpRemoved.toFixed(18), lpTokenDecimals)
+            .mul(firstTokenBalance)
+            .div(totalSupply)
+            .mul((1 - slippage) * 1000)
+            .div(1000);
+        const secondAmount =
+          parseUnits(lpRemoved.toFixed(18), lpTokenDecimals)
+            .mul(secondTokenBalance)
+            .div(totalSupply)
+            .mul((1 - slippage) * 1000)
+            .div(1000);
 
-        this.minReceivedFirst = Number(formatUnits(firstAmount, this.firstAsset.decimals));
-        this.minReceivedSecond = Number(formatUnits(secondAmount, this.secondAsset.decimals));
+        const minReceivedFirst = Number(formatUnits(firstAmount, this.firstAsset.decimals));
+        this.minReceivedFirst = minReceivedFirst;
+        const minReceivedSecond = Number(formatUnits(secondAmount, this.secondAsset.decimals));
+        this.minReceivedSecond = minReceivedSecond;
+
+        return {
+          minReceivedFirst: minReceivedFirst,
+          minReceivedSecond: minReceivedSecond,
+        };
       }
     }
   }
