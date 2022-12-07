@@ -34,8 +34,13 @@
         </template>
       </div>
 
+      <div class="table__cell impact">
+        <span v-if="asset.maxLeverage > 0">5x</span>
+        <span v-else>0x</span>
+      </div>
+
       <div class="table__cell trend">
-        <div class="trend__chart-change">
+        <div class="trend__chart-change" v-on:click="toggleChart()">
           <SmallChartBeta :data-points="asset.prices"
                           :is-stable-coin="asset.isStableCoin"
                           :line-width="2"
@@ -46,11 +51,6 @@
           <ColoredValueBeta v-if="asset.todayPriceChange" :value="asset.todayPriceChange" :formatting="'percent'"
                             :percentage-rounding-precision="2" :show-sign="true"></ColoredValueBeta>
         </div>
-        <IconButtonMenuBeta
-          class="chart__icon-button"
-          :config="{iconSrc: 'src/assets/icons/enlarge.svg', tooltip: 'Show chart'}"
-          v-on:iconButtonClick="toggleChart()">
-        </IconButtonMenuBeta>
       </div>
 
       <div class="table__cell price">
@@ -407,12 +407,12 @@ export default {
   transition: all 200ms;
 
   &.expanded {
-    height: 387px;
+    height: 433px;
   }
 
   .table__row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr) 20% 1fr 76px 102px;
+    grid-template-columns: repeat(6, 1fr) 76px 102px;
     height: 60px;
     border-style: solid;
     border-width: 0 0 2px 0;
@@ -454,16 +454,23 @@ export default {
         align-items: flex-end;
       }
 
+      &.impact {
+        font-weight: 500;
+        align-items: center;
+        justify-content: center;
+      }
+
       &.trend {
         justify-content: center;
         align-items: center;
-        margin-left: 49px;
+        margin-left: 9px;
 
         .trend__chart-change {
           display: flex;
           flex-direction: column;
           font-size: $font-size-xxs;
           align-items: center;
+          cursor: pointer;
         }
 
         .chart__icon-button {

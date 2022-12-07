@@ -11,9 +11,6 @@
         </div>
       </div>
 
-      <div class="table__cell">
-      </div>
-
       <div class="table__cell table__cell--double-value balance">
         <template v-if="lpBalances">
           <div class="double-value__pieces">
@@ -345,7 +342,7 @@ export default {
 
   .table__row {
     display: grid;
-    grid-template-columns: 20% repeat(2, 1fr) 20% 1fr 76px 102px;
+    grid-template-columns: 20% 1fr 20% 1fr 76px 102px;
     height: 60px;
     border-style: solid;
     border-width: 0 0 2px 0;
@@ -397,6 +394,7 @@ export default {
           flex-direction: column;
           font-size: $font-size-xxs;
           align-items: center;
+          cursor: pointer;
         }
 
         .chart__icon-button {
