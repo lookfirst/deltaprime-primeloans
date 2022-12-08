@@ -9,7 +9,7 @@
                      :symbol-secondary="lpToken.secondary"
                      v-on:newValue="inputChange"
                      :validators="validators"
-                     :max="lpTokenBalance.toFixed(10)">
+                     :max="lpTokenBalance.toFixed(18)">
       </CurrencyInput>
 
       <div class="transaction-summary-wrapper">
@@ -136,8 +136,13 @@ export default {
     },
 
     async inputChange(event) {
+      console.log(event);
       this.amount = event.value;
       this.currencyInputError = event.error;
+      this.$forceUpdate();
+      setTimeout(() => {
+        this.$forceUpdate();
+      }, 100);
       await this.calculateReceivedAmounts(this.amount);
     },
 
@@ -154,7 +159,11 @@ export default {
     },
 
     async calculateReceivedAmounts(lpRemoved) {
-      if (this.lpTokenBalance - this.amount <= 0) {
+      console.log('lpRemoved', lpRemoved);
+      console.log('this.lpTokenBalance', this.lpTokenBalance);
+      this.$forceUpdate();
+      if (this.lpTokenBalance - this.amount < 0) {
+        console.log('lower');
         this.minReceivedFirst = 0;
         this.minReceivedSecond = 0;
       } else {
@@ -170,6 +179,8 @@ export default {
         const firstTokenBalance = await firstTokenContract.balanceOf(this.lpToken.address);
         const secondTokenBalance = await secondTokenContract.balanceOf(this.lpToken.address);
         const totalSupply = await lpTokenContract.totalSupply();
+
+        this.$forceUpdate();
 
         const firstAmount =
           parseUnits(lpRemoved.toFixed(18), lpTokenDecimals)
@@ -188,6 +199,8 @@ export default {
         this.minReceivedFirst = minReceivedFirst;
         const minReceivedSecond = Number(formatUnits(secondAmount, this.secondAsset.decimals));
         this.minReceivedSecond = minReceivedSecond;
+
+        this.$forceUpdate();
 
         return {
           minReceivedFirst: minReceivedFirst,
