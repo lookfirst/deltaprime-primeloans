@@ -11,7 +11,7 @@
     Gas prices are high at the moment. Be careful with your transactions.
   </Banner>
   <Banner :closable="false">
-    Beta incoming! Please repay and empty your Prime Account.
+    Beta incoming! Please repay and empty your Prime account, and get ready to launch!
   </Banner>
   <div class="top-bar">
     <router-link to="/">
