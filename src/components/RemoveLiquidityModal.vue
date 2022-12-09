@@ -159,11 +159,8 @@ export default {
     },
 
     async calculateReceivedAmounts(lpRemoved) {
-      console.log('lpRemoved', lpRemoved);
-      console.log('this.lpTokenBalance', this.lpTokenBalance);
       this.$forceUpdate();
       if (this.lpTokenBalance - this.amount < 0) {
-        console.log('lower');
         this.minReceivedFirst = 0;
         this.minReceivedSecond = 0;
       } else {

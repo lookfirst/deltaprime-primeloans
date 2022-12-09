@@ -5,7 +5,8 @@
         <img class="asset__icon" :src="getAssetIcon(asset.symbol)">
         <div class="asset__info">
           <div class="asset__name">{{ asset.symbol }}</div>
-          <div class="asset__loan" v-if="pools && pools[asset.symbol]">Borrow&nbsp;APY:&nbsp;{{ pools[asset.symbol].borrowingAPY | percent }}
+          <div class="asset__loan" v-if="pools && pools[asset.symbol]">
+            Borrow&nbsp;APY:&nbsp;{{ pools[asset.symbol].borrowingAPY | percent }}
           </div>
         </div>
       </div>
@@ -13,7 +14,8 @@
       <div class="table__cell table__cell--double-value balance">
         <template v-if="assetBalances && assetBalances[asset.symbol]">
           <div class="double-value__pieces">
-            <LoadedValue :check="() => assetBalances[asset.symbol] != null" :value="formatTokenBalance(assetBalances[asset.symbol])"></LoadedValue>
+            <LoadedValue :check="() => assetBalances[asset.symbol] != null"
+                         :value="formatTokenBalance(assetBalances[asset.symbol])"></LoadedValue>
           </div>
           <div class="double-value__usd">
             <span v-if="assetBalances[asset.symbol]">{{ assetBalances[asset.symbol] * asset.price | usd }}</span>
@@ -102,7 +104,7 @@ import WithdrawModal from './WithdrawModal';
 import RepayModal from './RepayModal';
 import addresses from '../../common/addresses/avax/token_addresses.json';
 import {formatUnits} from '@/utils/calculate';
-import {erc20ABI} from "../utils/blockchain";
+import {erc20ABI} from '../utils/blockchain';
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -175,10 +177,10 @@ export default {
             },
             BORROWABLE_ASSETS.includes(this.asset.symbol) ?
               {
-              key: 'REPAY',
-              name: 'Repay',
-            }
-            : null
+                key: 'REPAY',
+                name: 'Repay',
+              }
+              : null
           ]
         },
         {
@@ -291,13 +293,17 @@ export default {
 
     async openAddFromWalletModal() {
       const modalInstance = this.openModal(AddFromWalletModal);
+      this.updateBalance().then(() => {
+        console.log('updated balance', this.accountBalance);
+        modalInstance.setWalletNativeTokenBalance(this.accountBalance);
+        this.$forceUpdate();
+      });
 
       modalInstance.asset = this.asset;
       modalInstance.assetBalance = this.assetBalances && this.assetBalances[this.asset.symbol] ? this.assetBalances[this.asset.symbol] : 0;
       modalInstance.loan = this.fullLoanStatus.debt ? this.fullLoanStatus.debt : 0;
       modalInstance.thresholdWeightedValue = this.fullLoanStatus.thresholdWeightedValue ? this.fullLoanStatus.thresholdWeightedValue : 0;
       modalInstance.walletAssetBalance = await this.getWalletAssetBalance();
-      modalInstance.walletNativeTokenBalance = this.accountBalance;
       modalInstance.noSmartLoan = this.noSmartLoan;
       modalInstance.$on('ADD_FROM_WALLET', addFromWalletEvent => {
         if (this.smartLoanContract) {
